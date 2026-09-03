@@ -1,0 +1,182 @@
+● Alright — starting from zero, building up. This is Lecture 1: How to Read Kernel C.
+
+  ---
+
+  1. A variable is a labeled box in memory
+
+  When you write int x = 5;, the computer sets aside a small box of memory, puts 5 in it, and lets you refer to that box by the name x. Every box
+  has two things:
+
+  - A value (what's inside — 5)
+  - An address (where the box physically sits in memory — some number like 0x7ffeeb)
+
+  Normally you never think about the address. You just say x and the compiler handles finding the box.
+
+     address: 0x1000
+     ┌──────┐
+     │  5   │   ← this box is named "x"
+     └──────┘
+
+  2. A pointer is a box that holds an address, not a value
+
+  int x = 5;
+  int *p = &x;
+
+  &x means "give me the address of x's box," not the value inside it. p is a different box, and what's stored inside p is the address 0x1000 — the
+  location of x.
+
+     address: 0x1000        address: 0x2000
+     ┌──────┐                ┌────────┐
+     │  5   │                │ 0x1000 │   ← this box is named "p"
+     └──────┘                └────────┘
+        ▲                        │
+        └────────────────────────┘
+         p "points at" x
+
+  *p means "go to the address stored in p, and give me what's in that box." So *p here equals 5. This is called dereferencing.
+
+  Why bother? Because pointers let you hand someone directions to a box instead of a copy of what's in it. That matters enormously once boxes get
+  big (like a whole struct) or when several pieces of code need to see the same box, not their own separate copy.
+
+  3. A struct is several boxes glued together under one name
+
+  struct point {
+        int x;
+        int y;
+  };
+
+  struct point p = { .x = 3, .y = 4 };
+
+  One struct, two fields, sitting next to each other in memory:
+
+     struct point p
+     ┌──────┬──────┐
+     │ x= 3 │ y= 4 │
+     └──────┴──────┘
+
+  p.x means "reach into p, get the x field." That's the dot operator — used when you have the struct itself, not a pointer to it.
+
+  4. -> is the dot operator, but through a pointer
+
+  struct point *pp = &p;
+  pp->x       // same as (*pp).x
+
+  If instead of the struct itself you have a pointer to the struct, you write pp->x instead of p.x. It means: "follow the pointer to find the
+  struct, then get field x." This is by far the most common operator you'll see in kernel code, because the kernel passes pointers to structs
+  everywhere — it would be wasteful to copy a giant struct like task_struct around every time.
+
+  p->tgid      // "follow p to the struct it points at, read its tgid field"
+
+  That single arrow is doing two things at once: following the address, then reading a named field. Once this is automatic to read, most kernel
+  code stops looking dense.
+
+  5. Designated initializers — naming fields when you build a struct
+
+  struct kernel_clone_args init_args = {
+        .flags = (CLONE_VM | CLONE_UNTRACED),
+        .fn    = kernel_init,
+  };
+
+  This builds a kernel_clone_args struct and explicitly sets two of its fields by name: .flags and .fn. Any field of the struct not named here —
+  and this particular struct has several more — gets automatically set to zero (or NULL for pointer fields). It's a way of saying "I only care
+  about setting these two things, leave everything else at its default."
+
+  6. current — a special kernel "who am I" pointer
+
+  current->pid
+
+  current isn't a normal variable you'd find declared somewhere with current = .... It's a macro — a shortcut the kernel provides that always
+  evaluates to: "a pointer to the task_struct of whatever is running on this CPU right now." Every CPU core in the machine can be running
+  different code at the same time, and each one has its own idea of what current means at that instant. Think of it like current is a label on the
+  door of "whoever's in this room right now" — walk into a different room (run on a different CPU, or get switched to a different task), and
+  current points somewhere else.
+
+  So current->pid reads as: "follow the pointer to whoever's running right now, and read their pid field."
+
+  7. Flags packed into bits, and & to test one
+
+  Computers store numbers in binary — sequences of 1s and 0s. A 32-bit integer has 32 individual bit-positions, and a common trick is to give each
+  bit position its own meaning, as an on/off switch:
+
+  #define CLONE_VM      0x00000100   // this is bit number 8
+  #define CLONE_FILES   0x00000400   // this is bit number 10
+  #define CLONE_THREAD  0x00010000   // this is bit number 16
+
+  If you combine several with | (bitwise OR — "turn on all these bits"):
+
+  int flags = CLONE_VM | CLONE_THREAD;
+
+  ...you get one number where two specific bits are turned on and everything else is 0. This is how a caller says "I want these three things, but
+  not that one" using a single integer argument instead of three separate boolean parameters.
+
+  To check later whether one particular bit is on, you use & (bitwise AND — "keep only the bits that are on in both numbers"):
+
+  if (flags & CLONE_THREAD)
+
+  CLONE_THREAD is all zeros except bit 16. ANDing flags against it wipes out every bit except bit 16. If bit 16 was on in flags, the result is
+  non-zero (true). If it was off, the result is zero (false). So this line reads as: "is the CLONE_THREAD bit turned on in flags?" — nothing more
+  exotic than that.
+
+     flags        = ...0001 0000 0000 0100 0000
+     CLONE_THREAD = ...0001 0000 0000 0000 0000
+     ------------------------------------- AND
+     result       = ...0001 0000 0000 0000 0000   ← non-zero → true
+
+  8. SYSCALL_DEFINE0(getpid) — a macro that builds a function
+
+  SYSCALL_DEFINE0(getpid)
+  {
+        return task_tgid_vnr(current);
+  }
+
+  You will not find a definition of a function called SYSCALL_DEFINE0 that looks like normal code — it's a macro, meaning before compilation even
+  starts, this text gets substituted with a bunch of other generated code: a real C function, plus registration so the kernel knows "when
+  userspace calls syscall number X, run this." The 0 tells it "this syscall takes zero arguments." If you see SYSCALL_DEFINE1(kill, pid_t, pid),
+  that means one argument, named pid, of type pid_t.
+
+  You don't need to know exactly what it expands to. Just recognize the pattern and read everything inside the { } as a completely normal function
+  body.
+
+  9. Words that describe the compiler's job, not the logic — ignore them
+
+  static noinline void __ref __noreturn rest_init(void)
+
+  - static — this function is private to this file, invisible elsewhere.
+  - noinline — don't let the compiler paste this function's body inline everywhere it's called.
+  - __ref, __init — hints about memory that can be freed after boot.
+  - __noreturn — this function never returns control to its caller (it always ends in something like an infinite loop).
+
+  None of these change what the code computes. When reading for meaning, mentally strip them and read void rest_init(void).
+
+  ---
+
+  Putting it all together
+
+  Here's the real getpid syscall, fully annotated with what you now know:
+
+  SYSCALL_DEFINE0(getpid)              // this becomes a real function, 0 args
+  {
+        return task_tgid_vnr(current);   // current = pointer to "who's running now"
+                                          // pass that pointer into a function,
+                                          // get back a number, return it
+  }
+
+  And the thread/process split:
+
+  if (clone_flags & CLONE_THREAD) {    // is the THREAD bit turned on?
+        p->group_leader = current->group_leader;  // follow current's pointer,
+                                                    // copy its group_leader field
+                                                    // into p's group_leader field
+        p->tgid = current->tgid;                   // same idea, copy tgid
+  }
+
+  ---
+
+  Quiz, before we move on:
+
+  struct foo *x;
+  x->bar = 5;
+
+  1. Is x itself a struct, or a pointer to one?
+  2. What does line 2 actually do, in your own words?
+  3. If flags = CLONE_VM | CLONE_FILES, what does flags & CLONE_THREAD evaluate to, and why?
