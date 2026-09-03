@@ -1,29 +1,56 @@
 # 2026-09-04 — Processes & Threads
 
 Book: *Modern Operating Systems* 5th ed., Tanenbaum & Bos.
-Local PDF: `/home/ephak/research/books/mos-5th-tanenbaum.pdf`
-Source: `/home/ephak/linuxsrc/linux` @ v7.3 ("Baby Opossum Posse")
+PDF: `/home/ephak/research/books/mos-5th-tanenbaum.pdf`
+Kernel source: `/home/ephak/linuxsrc/linux` @ v7.3
 
-**Today: pp. 88–113.** §2.1.2 Process Creation → §2.2.7.
-Left off at p.87 (Fig. 2-1, end of §2.1.1).
+**Today: pp. 88–113.** From §2.1.2 (Process Creation) to §2.2.7.
+I left off at p.87.
 
-Page mapping: **PDF page = printed page + 29.** My physical copy is the
-Global Edition so it may drift a page or two — re-anchor by section heading.
+Page mapping: **PDF page = printed page + 29.** My paper copy is the Global
+Edition so it might be off by a page — if so, find the section heading
+instead.
 
-> These notes were drafted before the session. Everything with a line number
-> was checked against the tree. Read with the source open, argue with it,
-> cross things out. A note I didn't verify myself is worth less than one I
-> did — the `?` markers below are the ones I still owe.
+> These notes were written before the session. Every line number was checked
+> against the real source. Things marked `?` are things I have NOT verified —
+> those are mine to check.
+
+---
+
+## First: how to read kernel C
+
+A few things show up constantly. Once you know them the code stops looking
+scary.
+
+| Thing | What it means |
+|---|---|
+| `current` | A macro. Means "the task running right now on this CPU." |
+| `p->tgid` | `p` is a pointer to a struct. `->` reads a field out of it. |
+| `flags & CLONE_THREAD` | Bitwise AND. Checks whether one specific bit is turned on. |
+| `SYSCALL_DEFINE0(getpid)` | Macro that builds a syscall function. The `0` = takes zero arguments. |
+| `static` | This function is private to this one `.c` file. |
+| `noinline`, `__ref`, `__noreturn` | Hints to the compiler. Safe to ignore while reading. |
+| `struct foo x = { .a = 1 };` | Make a struct and set field `a` to 1. Everything else = 0. |
+
+The `&` one matters most. Flags are single bits packed into one integer:
+
+```
+   CLONE_VM     = 0x00000100   = bit 8
+   CLONE_FILES  = 0x00000400   = bit 10
+   CLONE_THREAD = 0x00010000   = bit 16
+
+   flags = CLONE_VM | CLONE_FILES     ← OR means "turn both bits on"
+   flags & CLONE_THREAD               ← AND means "is that bit on?" (here: no)
+```
 
 ---
 
 # Part 1 — Processes (pp. 88–97)
 
-## 1.1 Where PID 1 actually comes from
+## 1.1 Where PID 1 comes from
 
-Tanenbaum, p.89: *"the very first process is hard-crafted when the system is
-booted."* That's the one sentence in the section that sounds like a dodge.
-It isn't — the hand-crafting has an address.
+The book (p.89) says *"the very first process is hard-crafted when the system
+is booted."* That sounds vague. It isn't — I can point at the code.
 
 `init/main.c:676`:
 
@@ -45,14 +72,29 @@ static noinline void __ref __noreturn rest_init(void)
 	pid = kernel_thread(kthreadd, NULL, NULL, CLONE_FS | CLONE_FILES);  // PID 2
 ```
 
-The comment says the quiet part out loud: *"so that it obtains pid 1."*
-Nobody assigns PID 1. init just gets to the allocator first, and the kernel
-orders the calls to make sure of it.
+**What this code does, line by line:**
+
+- `struct kernel_clone_args init_args = {...}` — fill in a form describing
+  the process we want to create. Two fields get set:
+  - `.flags` — how much the new task shares with its creator.
+  - `.fn = kernel_init` — the function the new task will start running.
+    So the new process begins life running a *kernel function*, not a program
+    from disk.
+- `kernel_clone(&init_args)` — hand that form to the process creator.
+  `&` means "the address of", because it wants a pointer. This is the
+  kernel's internal version of `fork()`. It returns the new PID.
+- `kernel_thread(kthreadd, ...)` — do it again, this time running the
+  function `kthreadd`. That becomes PID 2.
+
+**The interesting bit is the comment.** It says *"so that it obtains pid 1."*
+Nothing assigns PID 1 to init. init just asks for a PID first, and PIDs are
+handed out in order. The kernel deliberately orders these two calls so init
+wins the race.
 
 ```
           start_kernel()            init/main.c:982
                 │
-                │  (~40 subsystem init calls: mm, sched, timers, ...)
+                │  (~40 init calls: memory, scheduler, timers, ...)
                 ▼
           rest_init()               init/main.c:676
                 │
@@ -61,7 +103,7 @@ orders the calls to make sure of it.
    PID 1                PID 2
   kernel_init          kthreadd
       │                   │
-      │ execve            │ spawns all [bracketed] kernel threads
+      │ execve            │ creates all the [bracketed] kernel threads
       ▼                   │
   /sbin/init         ┌────┴────┬─────────┐
       │              ▼         ▼         ▼
@@ -69,55 +111,57 @@ orders the calls to make sure of it.
   in userspace
 ```
 
-**The bit the book doesn't say:** the process tree has *two* roots, not one.
-§2.1.4 draws one hierarchy with init at the top. Real Linux has userspace
-under PID 1 and every kernel thread under PID 2. `ps` shows the second
-family in `[brackets]`.
+**Something the book doesn't mention:** the process tree has *two* roots.
+§2.1.4 draws one tree with init on top. Really there are two families —
+normal programs under PID 1, and kernel threads under PID 2. In `ps` the
+kernel ones show up in `[square brackets]`.
 
-The ordering constraint in that comment is a real bug they hit — spawn them
-the other way round and it OOPSes. Worth understanding why (see questions).
-
-**Check:**
+**Check it:**
 ```
 ps -p 1 -o pid,comm
 ps -p 2 -o pid,comm
 ps --ppid 2 | head
 ```
 
-## 1.2 Boot is the fork/exec two-step from p.90
+## 1.2 Booting uses the same fork/exec trick from p.90
 
-p.90 makes a point of UNIX splitting creation in two: `fork` clones, `execve`
-replaces the image, and the gap between them is where the shell rewires fds.
-Tanenbaum frames this as a userspace idiom.
+p.90 explains that UNIX creates a program in two steps: `fork` makes a copy
+of the current process, then `execve` throws away that copy's program and
+loads a new one. The book presents this as something shells do.
 
-Boot does the identical dance across the kernel/userland boundary:
+Booting does the exact same two steps:
 
 ```
    kernel_clone()                    kernel_execve()
         │                                  │
         ▼                                  ▼
-   ┌─────────┐   runs kernel code    ┌──────────┐
-   │ PID 1   │ ────────────────────► │  PID 1   │
-   │ =kernel │                       │ =/sbin/  │
-   │  _init  │                       │   init   │
-   └─────────┘                       └──────────┘
-    kernel thread                     userspace process
-        └──────── same task_struct ────────┘
-              (the fork half)   (the exec half)
+   ┌─────────┐   running kernel code  ┌──────────┐
+   │ PID 1   │ ────────────────────►  │  PID 1   │
+   │ =kernel │                        │ =/sbin/  │
+   │  _init  │                        │   init   │
+   └─────────┘                        └──────────┘
+    kernel thread                      normal program
+        └──────── same task ───────────────┘
+         step 1: fork      step 2: exec
 ```
 
-The exec half is `run_init_process()`, `init/main.c:1467`, ending in:
+Step 2 is `run_init_process()` at `init/main.c:1467`. Its last line:
 
 ```c
 	return kernel_execve(init_filename, argv_init, envp_init);
 ```
 
-So PID 1 is born as a kernel thread and then **execve's itself into
-userspace**. Same primitive as my shell forking `sort`, applied to the most
-important boundary in the system. That's a nicer piece of design economy
-than the book lets on.
+**What this does:** `kernel_execve` takes three things — the path to a
+program (`init_filename`, e.g. `/sbin/init`), its command-line arguments
+(`argv_init`), and its environment variables (`envp_init`). It replaces the
+current task's program with that file. Same idea as `execve()` from
+userspace.
 
-The fallback chain right below (`init/main.c:1617`):
+So PID 1 starts as a kernel thread, then **replaces itself with a program
+from disk.** That's the same fork-then-exec pattern as a shell running
+`sort` — just applied at the boundary between the kernel and normal programs.
+
+Right below it there's a fallback list (`init/main.c:1617`):
 
 ```c
 	if (!try_to_run_init_process("/sbin/init") ||
@@ -129,17 +173,25 @@ The fallback chain right below (`init/main.c:1617`):
 	panic("No working init found.  Try passing init= option to kernel. ...");
 ```
 
-**Security note — file this.** `execute_command` (line 1599) comes from the
-`init=` kernel cmdline parameter and is tried **before** all four defaults.
-`init=/bin/sh` at the bootloader is the classic physical-access root shell:
-no password prompt, because I've replaced PID 1 before any authentication
-code exists to run. Attacker-controlled input is checked first, by design.
-This is why bootloader passwords and Secure Boot exist, and it's my first
-concrete "the boot chain is attack surface" data point.
+**What this does:** try each path in turn. These functions return 0 on
+success, so `!` (logical NOT) turns success into true. `||` stops at the
+first one that works. If all four fail, `panic()` — the kernel gives up and
+halts.
 
-## 1.3 getpid() doesn't return what I thought
+**Security note — worth remembering.** There's a variable `execute_command`
+at line 1599 that gets tried *before* all four of these. It comes from the
+`init=` option on the kernel command line.
 
-`kernel/sys.c:999` — the whole reason to trace a small syscall:
+That means: if I can edit the bootloader line and add `init=/bin/sh`, the
+kernel runs a shell as PID 1 instead of the real init. No login, no password
+— because I've replaced PID 1 *before* any login code exists to run. This is
+the classic physical-access root trick, and it's also why bootloader
+passwords and Secure Boot exist. My first concrete example of the boot
+process being attack surface.
+
+## 1.3 getpid() does not return what I assumed
+
+`kernel/sys.c:999`:
 
 ```c
 SYSCALL_DEFINE0(getpid)
@@ -154,41 +206,51 @@ SYSCALL_DEFINE0(gettid)
 }
 ```
 
-`getpid()` returns the **tgid**. `gettid()` returns the **pid**. The kernel's
-own comment does the translation: *"Thread ID — the internal kernel 'pid'."*
+**What this does:**
 
-The vocabulary is inverted between the two worlds:
+- `SYSCALL_DEFINE0(getpid)` — defines the `getpid` system call. `0` = no
+  arguments.
+- `current` — the task calling this right now.
+- `task_tgid_vnr(current)` — get this task's **tgid** ("thread group ID").
+- `task_pid_vnr(current)` — get this task's **pid**.
 
-| What I say | What the kernel calls it | Syscall |
+So `getpid()` gives you the **tgid**, and `gettid()` gives you the **pid**.
+That's backwards from what the names suggest. The kernel's own comment
+translates it: *"Thread ID — the internal kernel 'pid'."*
+
+| What I call it | What the kernel calls it | Which syscall returns it |
 |---|---|---|
-| PID — the process | `tgid` | `getpid()` |
-| TID — one thread | `pid` | `gettid()` |
+| PID (a process) | `tgid` | `getpid()` |
+| TID (one thread) | `pid` | `gettid()` |
 
 ```
-  what I call "a process with 3 threads"
+  what I'd call "one process with 3 threads"
   ┌──────────────────────────────────────┐
-  │  tgid = 4021                         │   getpid() → 4021 for all three
+  │  tgid = 4021                         │   getpid() → 4021 (all three)
   │                                      │
   │   task        task        task       │
   │  pid=4021    pid=4022    pid=4023    │   gettid() → 4021 / 4022 / 4023
   │  (leader)                            │
   └──────────────────────────────────────┘
         ▲
-        │ to the kernel these are just three tasks
+        │ the kernel just sees three tasks
         │ that happen to share a tgid
 ```
 
-To Linux there is no "process" object. There are only tasks. A process is
-*a set of tasks sharing a tgid*. Tanenbaum spends §2.1 on processes and §2.2
-on threads as two concepts; Linux implements one thing and derives both.
+**Why it's like this:** Linux has no separate "process" object. It only has
+tasks. A "process" is just *a group of tasks that share a tgid*. The book
+teaches processes in §2.1 and threads in §2.2 as two different things. Linux
+builds one thing and gets both out of it.
 
-The `vnr` suffix = "virtual number", i.e. resolved relative to the caller's
-PID namespace. That's why PID 1 inside a container isn't PID 1 on the host.
-One suffix, an entire isolation subsystem behind it.
+The `vnr` at the end of those function names means "virtual number" — the ID
+*as seen from the caller's PID namespace*. That's why PID 1 inside a Docker
+container isn't PID 1 on the host. Whole isolation system hiding behind three
+letters. `?` — I haven't looked at namespaces yet.
 
-## 1.4 Process states: book says 3, reality has more
+## 1.4 Process states — the book says 3, Linux has more
 
-Fig. 2-2 (p.93) gives Running / Ready / Blocked. `include/linux/sched.h:107`:
+Fig. 2-2 (p.93) gives three: Running, Ready, Blocked. Now
+`include/linux/sched.h:107`:
 
 ```c
 #define TASK_RUNNING			0x00000000
@@ -200,97 +262,110 @@ Fig. 2-2 (p.93) gives Running / Ready / Blocked. `include/linux/sched.h:107`:
 #define TASK_DEAD			0x00000080
 ```
 
-Two mismatches. Catching mismatches is the actual skill here, so:
+**What this is:** just names for numbers. Each one is a single bit
+(1, 2, 4, 16, 32, 128), so several can be combined into one value and tested
+with `&`.
+
+Two places the book and reality disagree:
 
 ```
    BOOK (Fig 2-2)                 LINUX
    ─────────────                  ─────
                                   TASK_RUNNING (0x0)
    ┌─────────┐                    ┌───────────────────────┐
-   │ Running │◄──┐                │ runnable.             │
-   └────┬────┘   │ 3              │ am I on a CPU *right  │
-        │ 2      │                │ now*? not stored here │
-        ▼        │                │ — that's a runqueue   │
-   ┌─────────┐   │                │ property              │
+   │ Running │◄──┐                │ means "able to run"   │
+   └────┬────┘   │ 3              │                       │
+        │ 2      │                │ whether it's ON a CPU │
+        ▼        │                │ right now isn't       │
+   ┌─────────┐   │                │ stored here at all    │
    │  Ready  │───┘                └───────────────────────┘
    └─────────┘
-                                  splits in two:
+
+                                  splits into two:
    ┌─────────┐                    ┌──────────────────────┐
-   │ Blocked │  ─────────────►    │ TASK_INTERRUPTIBLE   │ signals wake it
+   │ Blocked │  ─────────────►    │ TASK_INTERRUPTIBLE   │ signals can wake it
    └─────────┘                    ├──────────────────────┤
-                                  │ TASK_UNINTERRUPTIBLE │ deaf to signals
-                                  └──────────────────────┘  = 'D' in ps
+                                  │ TASK_UNINTERRUPTIBLE │ ignores signals
+                                  └──────────────────────┘  shows as 'D' in ps
 ```
 
-**(a) Linux doesn't distinguish Running from Ready at all.** Both are
-`TASK_RUNNING` = 0x0. The book's transitions 2 and 3 (scheduler picks /
-deposes) change *nothing* in the state field. Whether a runnable task is
-executing is a property of a CPU's runqueue, not of the task. The state
-machine in Fig. 2-2 is a model, and this is exactly where model and
-implementation part ways.
+**(a) Linux doesn't separate Running from Ready.** Both are `TASK_RUNNING`
+(zero). The book's arrows 2 and 3 — the scheduler picking or removing a
+process — don't change the state field at all. Whether a task is actually on
+a CPU is tracked somewhere else (in the scheduler's run queue), not in the
+task's state.
 
-**(b) "Blocked" splits in two**, and I've already met the split in the wild:
-`TASK_UNINTERRUPTIBLE` is `D` state — the process stuck on dead NFS or a
-dying disk that survives `kill -9`. Not because SIGKILL is special-cased
-away, but because signal delivery works by *making a task runnable*, and this
-task refuses to become runnable. `kill -9` isn't magic; it's a signal, and a
-signal needs a task willing to wake up.
+**(b) "Blocked" is two different things in Linux.** And I've already run into
+the difference:
 
-Also: these are **bit flags** (0x1, 0x2, 0x4, 0x10…), not an enum. States get
-masked and combined. `EXIT_ZOMBIE` is §2.1.3's terminated-but-unreaped
-process, sitting there as a number.
+- `TASK_INTERRUPTIBLE` — waiting, but a signal can wake it up. Normal.
+- `TASK_UNINTERRUPTIBLE` — waiting and ignoring signals. This is `D` state in
+  `ps`. It's why a process stuck on a dead network drive survives `kill -9`.
 
-**Check:** `ps -eo pid,stat,comm | head -30` — find an `S`, try to catch a `D`.
+That last one is worth getting right: `kill -9` isn't special. Delivering a
+signal works by *waking the task up*. A task in `TASK_UNINTERRUPTIBLE`
+refuses to wake up, so there's nothing to deliver to. The signal isn't being
+blocked — the task just never gets to the point of noticing it.
 
-## 1.5 The "process table" is a lie-to-children
+`EXIT_ZOMBIE` is the book's §2.1.3 "finished but nobody collected the exit
+status yet" process, sitting there as the number 32.
 
-p.94: the OS keeps *"a table (an array of structures), called the process
+**Check it:** `ps -eo pid,stat,comm | head -30` — look for `S` (sleeping,
+most things), try to catch a `D`.
+
+## 1.5 The "process table" is simplified in the book
+
+p.94 says the OS keeps *"a table (an array of structures), called the process
 table, with one entry per process."*
 
-Linux has no such array:
+Linux doesn't have that array:
 
 ```
    BOOK                          LINUX
    ────                          ─────
-   process_table[]               per-namespace IDR (sparse id→ptr tree)
-   ┌───┬───┬───┬───┬───┐              pid_namespace.idr
-   │ 0 │ 1 │ 2 │ 3 │ 4 │              include/linux/pid_namespace.h:27
-   └───┴───┴───┴───┴───┘                     │
-   index == pid                        ┌─────┴─────┐
-   one global table                    ▼           ▼
-                                  task_struct  task_struct
-                                  (individually allocated,
-                                   threaded onto lists)
+   process_table[]               a sparse lookup tree, one per namespace
+   ┌───┬───┬───┬───┬───┐         (called an "IDR")
+   │ 0 │ 1 │ 2 │ 3 │ 4 │              pid_namespace.idr
+   └───┴───┴───┴───┴───┘              include/linux/pid_namespace.h:27
+   position in array = pid                    │
+   one table for whole system           ┌─────┴─────┐
+                                        ▼           ▼
+                                   task_struct  task_struct
+                                   (each one allocated on its own,
+                                    linked together in lists)
 ```
 
-- `struct task_struct` — `include/linux/sched.h:835`, allocated individually.
-- Iterated via `for_each_process()` — `include/linux/sched/signal.h:640`.
-- PID lookup goes through an **IDR** held *per PID namespace*:
-  `struct idr idr;` at `include/linux/pid_namespace.h:27`, allocated from at
+Where things actually are:
+
+- `struct task_struct` — `include/linux/sched.h:835`. One per task,
+  allocated individually.
+- Walking all of them: `for_each_process()` at
+  `include/linux/sched/signal.h:640`.
+- Looking up a PID: goes through an IDR (a tree that maps numbers to
+  pointers), and there's **one per PID namespace** —
+  `struct idr idr;` at `include/linux/pid_namespace.h:27`, filled in at
   `kernel/pid.c:240` and `:262`.
 
-The reason is in the struct name: `pid_namespace`. A flat global array
-can't express *"PID 1 means different things to different observers."*
-The book's array is the right mental model and the wrong implementation.
+The reason is right there in the name `pid_namespace`. A single global array
+can't handle "PID 1 means one thing on the host and a different thing inside
+a container." You need a separate lookup table per namespace.
 
-Fig. 2-4 (p.95) lists what a process-table entry "typically" holds. Later
-exercise: open `task_struct` and find Tanenbaum's fields in it — then count
-how many hundreds of fields aren't on his list. That's the honest scale gap
-between model and machine.
+The book's array is a good way to *think* about it. It's just not what's
+there.
 
 ---
 
 # Part 2 — Threads (pp. 97–113)
 
-## 2.1 The book flags this itself
+## 2.1 The book warns me about this
 
 p.102: *"First we will look at the classical thread model; after that we will
 examine the Linux thread model, **which blurs the line between processes and
 threads**."*
 
-It does, and I found exactly where the line gets blurred — it's eight lines.
+It does. And the blurring is eight lines of code.
 
-## 2.2 The entire process/thread distinction, in one `if`
+## 2.2 The difference between a process and a thread is one `if`
 
 `kernel/fork.c:2381`:
 
@@ -305,196 +380,224 @@ It does, and I found exactly where the line gets blurred — it's eight lines.
 	}
 ```
 
-That's it. That's the whole thing.
+**Line by line:**
+
+- `p` — the brand new task being built.
+- `p->pid = pid_nr(pid);` — give it its own ID number. **Every** new task
+  gets one, thread or not.
+- `if (clone_flags & CLONE_THREAD)` — did the caller ask for a thread?
+  (Check whether that one bit is set.)
+- If **yes**:
+  - `p->group_leader = current->group_leader;` — point at the same leader as
+    whoever created me.
+  - `p->tgid = current->tgid;` — copy their tgid. Now `getpid()` returns the
+    same number for both of us, so we look like one process.
+- If **no**:
+  - `p->group_leader = p;` — I'm my own leader.
+  - `p->tgid = p->pid;` — my tgid is just my own pid. I'm a new process.
+
+That's the whole thing.
 
 ```
    every new task gets its own pid
                 │
                 ▼
-      CLONE_THREAD set?
+      was CLONE_THREAD asked for?
        ┌────────┴────────┐
       YES               NO
        │                 │
        ▼                 ▼
-  join caller's     start my own group
-  thread group      group_leader = me
-  tgid = caller's   tgid = my own pid
-  tgid
-       │                 │
-       ▼                 ▼
-  "a new thread"    "a new process"
+  join the caller's   start my own group
+  group               group_leader = me
+  tgid = caller's     tgid = my own pid
+  tgid                     │
+       │                   │
+       ▼                   ▼
+  "a new thread"      "a new process"
 ```
 
-**A thread and a process are the same object, created by the same function,
-differing by one flag.** `fork()` and `pthread_create()` both land in
-`copy_process()`; they just pass different `clone_flags`. Everything the
-book presents as two categories is one code path with a branch in it.
+**So a thread and a process are the same object.** Both `fork()` and
+`pthread_create()` end up in the same function (`copy_process`). They just
+pass different flags. The two categories the book teaches are one code path
+with an `if` in it.
 
-And `same_thread_group()` (`include/linux/sched/signal.h:711`) is:
+Related, `include/linux/sched/signal.h:711`:
 
 ```c
+bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
+{
 	return p1->signal == p2->signal;
+}
 ```
 
-"Same process" = *the two tasks point at the same `signal_struct`.* A pointer
-comparison. That's the whole ontology.
+**What this does:** takes two tasks, returns true if they're "in the same
+process." And the test is just: *do these two point at the same
+`signal_struct`?* One pointer comparison. That's all "same process" means
+here.
 
-## 2.3 Fig. 2-11's two columns are just CLONE flags
+## 2.3 Fig. 2-11's two columns are really just flags
 
-p.104 splits things into per-process (shared) and per-thread (private):
+p.104 has a table: things shared by all threads (address space, open files,
+signals…) vs things each thread has its own of (registers, stack).
 
-| Fig. 2-11 says shared | Linux flag | `include/uapi/linux/sched.h` |
+In Linux those are literally flags you pass in:
+
+| Fig. 2-11 calls it shared | Flag | Where (`include/uapi/linux/sched.h`) |
 |---|---|---|
 | Address space | `CLONE_VM` | `:11` — 0x00000100 |
 | Open files | `CLONE_FILES` | `:13` — 0x00000400 |
 | Signals & handlers | `CLONE_SIGHAND` | `:14` — 0x00000800 |
-| (cwd, root dir) | `CLONE_FS` | `:12` — 0x00000200 |
-| — thread grouping — | `CLONE_THREAD` | `:19` — 0x00010000 |
-| Per-thread: stack/TLS | `CLONE_SETTLS` | `:22` — 0x00080000 |
+| Current directory | `CLONE_FS` | `:12` — 0x00000200 |
+| (being one process) | `CLONE_THREAD` | `:19` — 0x00010000 |
+| Per-thread storage | `CLONE_SETTLS` | `:22` — 0x00080000 |
 
 ```
    pthread_create()          fork()
-   CLONE_VM|FS|FILES|        (almost no
-   SIGHAND|THREAD|SETTLS      flags set)
+   asks for:                 asks for:
+   VM|FS|FILES|              (almost nothing)
+   SIGHAND|THREAD|SETTLS
         │                        │
         ▼                        ▼
    ┌─────────────────┐    ┌──────────────┐   ┌──────────────┐
-   │  shared mm      │    │  own mm      │   │  own mm      │
-   │  shared fds     │    │  own fds     │   │  own fds     │
+   │  shared memory  │    │  own memory  │   │  own memory  │
+   │  shared files   │    │  own files   │   │  own files   │
    │  shared signals │    │  own signals │   │  own signals │
    │                 │    └──────────────┘   └──────────────┘
    │  task   task    │       parent             child
    └─────────────────┘
-    one "process"
+     one "process"
 ```
 
-Here's the thing the book's two-column table hides: **those columns aren't
-fixed.** They're a menu. Fig. 2-11 presents "shared vs private" as a property
-of what threads *are*; in Linux it's a per-call argument. I can ask for
-shared memory *without* a shared thread group. I can share file descriptors
-but not address space. The classical model is one popular point in a space
-of combinations.
+**The part the book's table hides:** those two columns aren't fixed. They're
+a menu. Fig. 2-11 makes "shared vs private" sound like a fact about what
+threads *are*. In Linux it's an argument you choose per call. You could share
+memory but not be one process. You could share open files but not memory.
+"Thread" and "process" are just the two combinations people use most.
 
-That's also why containers are built out of these — same mechanism, more
-flags (the `CLONE_NEW*` family, which I haven't looked at yet). `?` — come
-back for those.
+Containers are built out of more flags in this same family (`CLONE_NEW*`).
+`?` — haven't read those yet.
 
-## 2.4 §2.2.4 vs §2.2.5 — Linux already picked
+## 2.4 §2.2.4 vs §2.2.5 — Linux already picked a side
 
-The book spends pp.107–112 weighing user-level threads (fast switches, no
-kernel involvement, but one blocking syscall stalls everyone) against
-kernel-level threads (kernel schedules each one, syscalls cost more).
+Pages 107–112 weigh two designs:
 
 ```
    §2.2.4 user-level (Fig 2-15a)     §2.2.5 kernel-level (Fig 2-15b)
    ┌───────────────────────┐         ┌───────────────────────┐
    │  T1  T2  T3           │  user   │  T1    T2    T3       │  user
    │   \  |  /             │         │   │     │     │       │
-   │  run-time system      │         │   │     │     │       │
+   │  run-time library     │         │   │     │     │       │
    ├───────────────────────┤         ├───┼─────┼─────┼───────┤
    │  kernel sees: 1 task  │  kernel │   ▼     ▼     ▼       │  kernel
    └───────────────────────┘         │  task  task  task     │
-   one blocking syscall              └───────────────────────┘
-   freezes all three                 kernel schedules each
-```
-
-Linux is (b), and hard. There is no in-kernel notion of a user-level thread
-at all — every pthread is a full `task_struct`, scheduled independently. The
-per-process "thread table" of Fig. 2-15(a) doesn't exist here.
-
-`?` — I believe glibc's NPTL is strictly 1:1 (one pthread = one task, no
-multiplexing), which makes §2.2.6's hybrid model a road Linux didn't take.
-That's a *userspace* claim though, not something in this tree, so verify it
-rather than trusting the note.
-
-## 2.5 The `errno` problem → TLS → the stack canary
-
-§2.2.7 (p.113) worries about `errno`: thread 1 makes a failing syscall,
-scheduler switches, thread 2 clobbers the global `errno`, thread 1 reads
-garbage. Tanenbaum uses it to argue globals and threads don't mix.
-
-The fix is **thread-local storage**, and this is where the chapter suddenly
-connects to everything I already know from pwn:
+   switching is fast, but            └───────────────────────┘
+   one blocking syscall              kernel schedules each one,
+   freezes all three                 syscalls cost more
 
 ```
-        one address space (CLONE_VM — shared)
+
+Linux is firmly (b). There's no such thing as a user-level thread as far as
+the kernel is concerned — every pthread is a real `task_struct` that the
+scheduler handles on its own. The per-process "thread table" in Fig. 2-15(a)
+doesn't exist here.
+
+`?` — I think glibc does strict 1:1 (one pthread = exactly one task, no
+juggling), which would mean §2.2.6's "hybrid" design is a path Linux didn't
+take. But that's a *glibc* thing, not in this source tree, so don't trust
+this line until I check it.
+
+## 2.5 The errno problem leads somewhere I recognize
+
+§2.2.7 (p.113) worries about `errno`. Thread 1 makes a syscall that fails,
+which sets the global `errno`. Before thread 1 reads it, the scheduler
+switches to thread 2, which makes its own failing call and overwrites
+`errno`. Thread 1 wakes up and reads the wrong value.
+
+The fix is **thread-local storage (TLS)**: each thread gets its own private
+copy of certain variables, even though all threads share one address space.
+
+```
+        one shared address space (that's CLONE_VM)
    ┌───────────────────────────────────────────────┐
-   │  .text   .data   heap                         │  ← genuinely shared
+   │  code   globals   heap                        │  ← really shared
    │                                               │
    │   ┌─────────────┐   ┌─────────────┐           │
-   │   │ TLS block   │   │ TLS block   │           │  ← per-thread,
-   │   │  errno      │   │  errno      │           │    same address space,
-   │   │  canary     │   │  canary     │           │    different addresses
+   │   │ TLS block   │   │ TLS block   │           │  ← one per thread
+   │   │  errno      │   │  errno      │           │
+   │   │  canary     │   │  canary     │           │
    │   └─────────────┘   └─────────────┘           │
    │         ▲                 ▲                   │
-   │      %fs (T1)          %fs (T2)               │
+   │    %fs points here   %fs points here          │
+   │      (thread 1)        (thread 2)             │
    └───────────────────────────────────────────────┘
 ```
 
-Each thread gets its own TLS block; `%fs` points at its own. `errno` is a
-`__thread` variable, so `errno` is really `*(fs_base + offset)` — same
-symbol, different address per thread. That's `CLONE_SETTLS`
-(`sched.h:22`) doing its job at clone time.
+Each thread's `%fs` register points at its own block. `errno` isn't really a
+global — it's "whatever is at some offset from `%fs`". Same name in the
+source, different address per thread. Setting this up is what `CLONE_SETTLS`
+(`sched.h:22`) does at thread creation.
 
-**And the stack canary lives in that same block, at `%fs:0x28` on x86-64.**
-Which retroactively explains something I've done a hundred times without
-thinking: the reason a canary leak is *per-thread*, the reason the canary is
-fetched from `fs:0x28` in every prologue I've ever stared at in Ghidra.
-It's not a magic location — it's TLS, the same mechanism invented to stop
-threads clobbering each other's `errno`.
+**And this is the bit I actually care about:** on x86-64, the stack canary
+lives in that same block, at `%fs:0x28`.
 
-`?` — glibc/ABI detail, not in this tree. Verify in gdb:
+So the `mov rax, qword ptr fs:[0x28]` I've seen in a hundred function
+prologues in Ghidra isn't a random magic address. It's TLS — the exact same
+mechanism invented so threads don't clobber each other's `errno`. That's also
+why each thread has a different canary value.
+
+`?` — this is a glibc/ABI detail, not in the kernel tree. Verify it:
 ```
 gdb ./anything
 > break main
 > run
 > p/x $fs_base
-> x/gx $fs_base + 0x28        # canary
+> x/gx $fs_base + 0x28        # should be the canary
 ```
-and compare against the `mov rax, qword ptr fs:[0x28]` in the prologue.
+then compare with the `fs:[0x28]` load in the prologue.
 
 ---
 
 # Experiments
 
 ```bash
-# 1. two roots of the process tree
+# 1. the two roots of the process tree
 ps -p 1 -o pid,comm ; ps -p 2 -o pid,comm ; ps --ppid 2 | head
 
-# 2. pid vs tgid, made visible
-ps -eLf | head -20            # PID column vs LWP column
+# 2. pid vs tgid, visible
+ps -eLf | head -20                              # PID column vs LWP column
 cat /proc/self/status | grep -E 'Pid|Tgid|Threads'
 
 # 3. states in the wild
 ps -eo pid,stat,comm | head -30
 
-# 4. the flag difference, observed
+# 4. the flag difference, seen directly
 strace -f -e trace=clone,clone3,execve ./forker    2>&1 | grep clone
 strace -f -e trace=clone,clone3,execve ./threader  2>&1 | grep clone
-#   ^ same syscall, different flags. that's the whole distinction.
+#   same syscall both times. only the flags differ. that IS the distinction.
 ```
 
-Two 5-line programs to write: one `fork()`, one `pthread_create()`. The
-point is the `clone_flags` in the strace output, not the programs.
+Two tiny programs to write: one calling `fork()`, one calling
+`pthread_create()`. The programs don't matter — the flags in the strace
+output do.
 
 # Questions to answer in writing
 
-These are the actual work — the notes above are just setup.
+This is the real work. The notes above are just setup.
 
-1. `rest_init()` creates PID 1 before PID 2, but the comment says init *wants*
-   kthreads. What breaks in the other order?
-2. If `getpid()` returns tgid, what does it return in a single-threaded
-   program — and why does that make the naming almost defensible?
-3. Fig. 2-2 has four transitions. Which ones are invisible in Linux's state
-   field, and where does that information actually live?
-4. In one sentence, using how signals are delivered: why can't `kill -9` kill
+1. `rest_init()` makes PID 1 before PID 2, but the comment says init wants
+   kthreads. What actually breaks if you swap the order?
+2. If `getpid()` returns tgid, what does it return in a program with only one
+   thread — and why does that make the naming almost make sense?
+3. Fig. 2-2 has four arrows. Which ones don't show up in Linux's state field
+   at all, and where does that info live instead?
+4. In one sentence, using how signals get delivered: why can't `kill -9` kill
    a `D`-state process?
-5. `same_thread_group()` compares `signal` pointers, not tgids. Why that
-   field and not `tgid`? (Guess, then go look.)
+5. `same_thread_group()` compares `signal` pointers instead of comparing
+   tgids. Why that field? (Guess first, then go look.)
 6. Fig. 2-11 says open files are per-process. Which flag would give me two
-   tasks that share file descriptors but *not* address space, and is that a
-   process or a thread?
+   tasks that share file descriptors but *not* memory — and is that a process
+   or a thread?
 
 # My own notes
 
-_(below this line — during/after. raw is fine. wrong is fine.)_
+_(below here — during/after. raw is fine. wrong is fine.)_
