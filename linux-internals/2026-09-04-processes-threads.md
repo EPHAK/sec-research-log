@@ -1,11 +1,28 @@
 # 2026-09-04 — Processes & Threads
 
-## Book (Modern Operating Systems)
+## Book (Modern Operating Systems, 5th ed. — Tanenbaum & Bos)
+
+Local copy: `/run/media/ephak/everydayusage/OTHERS/playground/umm books i
+guess/Modern Operating Systems, 5th edition -- Andrew S_ Tanenbaum, Herbert
+Bos ... Anna's Archive.pdf`
 
 - Finish whatever's left of the Processes & Threads chapter — process states,
   context switching, scheduling basics, thread models (kernel vs user-level).
 - Stop reading the moment a concept makes you go "how does Linux actually do
   this" — don't finish the section first, go look immediately.
+
+(Also on disk, for later: *Operating Systems Design and Implementation*,
+3rd ed. — same folder. Not for tomorrow, but flagging it exists.)
+
+## kernel-internals.org — read alongside the source, not instead of it
+
+These pages exist specifically for what tomorrow is trying to do:
+- `syscalls/syscall-entry/` and `syscalls/syscall-define/` — syscall entry
+  and dispatch mechanics, directly relevant to tracing `getpid()`.
+- `kernel/early-boot/` — narrative walkthrough of `start_kernel()`.
+- `mm/fork/` and `sched/sched-fork/` — "what happens when you fork()" and
+  the scheduler's side of it. Queued for the later process-creation session,
+  not tomorrow, but worth knowing it's there.
 
 ## Real source, first pass (`/home/ephak/linuxsrc/linux`, tag v7.3)
 
