@@ -2,17 +2,16 @@
 
 ## Book (Modern Operating Systems, 5th ed. — Tanenbaum & Bos)
 
-Local copy: `/run/media/ephak/everydayusage/OTHERS/playground/umm books i
-guess/Modern Operating Systems, 5th edition -- Andrew S_ Tanenbaum, Herbert
-Bos ... Anna's Archive.pdf`
+Local copy: `/home/ephak/research/books/mos-5th-tanenbaum.pdf` (1185pp)
 
 - Finish whatever's left of the Processes & Threads chapter — process states,
   context switching, scheduling basics, thread models (kernel vs user-level).
 - Stop reading the moment a concept makes you go "how does Linux actually do
   this" — don't finish the section first, go look immediately.
 
-(Also on disk, for later: *Operating Systems Design and Implementation*,
-3rd ed. — same folder. Not for tomorrow, but flagging it exists.)
+(Also on disk, for later: *Operating Systems Design and Implementation*
+3rd ed. at `/home/ephak/research/books/osdi-3rd-tanenbaum.pdf`. Not for
+tomorrow, but flagging it exists.)
 
 ## kernel-internals.org — read alongside the source, not instead of it
 
