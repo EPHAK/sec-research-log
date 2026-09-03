@@ -4,10 +4,21 @@
 
 Local copy: `/home/ephak/research/books/mos-5th-tanenbaum.pdf` (1185pp)
 
-- Finish whatever's left of the Processes & Threads chapter — process states,
-  context switching, scheduling basics, thread models (kernel vs user-level).
+**Start at printed p.88 — §2.1.2 Process Creation.** (Left off at p.87,
+Fig. 2-1, end of §2.1.1 The Process Model.)
+
+Page mapping: **PDF page = printed page + 29.** So printed 88 = PDF 117.
+Physical copy is the Global Edition, so it may drift a page or two —
+re-anchor by section heading if it does.
+
+- Continue through §2.1.2 Process Creation → §2.1.3 Process Termination →
+  §2.1.4 Process Hierarchies → §2.1.5 Process States.
 - Stop reading the moment a concept makes you go "how does Linux actually do
   this" — don't finish the section first, go look immediately.
+
+Note: §2.1.2's first listed cause of process creation is *system
+initialization* — that's literally `start_kernel()`, so the source reading
+below picks up exactly where the book leaves off.
 
 (Also on disk, for later: *Operating Systems Design and Implementation*
 3rd ed. at `/home/ephak/research/books/osdi-3rd-tanenbaum.pdf`. Not for
