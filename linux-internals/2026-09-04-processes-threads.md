@@ -7,19 +7,24 @@
 - Stop reading the moment a concept makes you go "how does Linux actually do
   this" — don't finish the section first, go look immediately.
 
-## Real source to map it to (`/home/ephak/linuxsrc/linux`, tag v7.3)
+## Real source, first pass (`/home/ephak/linuxsrc/linux`, tag v7.3)
 
-| Concept | Where |
-|---|---|
-| What a process/thread actually is | `include/linux/sched.h:835` — `struct task_struct` |
-| Creating a process/thread | `kernel/fork.c:2012` — `copy_process()` |
-| The `fork()`/`clone()`/`vfork()` syscalls | `kernel/fork.c` — `kernel_clone()` at `:2712`, search `SYSCALL_DEFINE0(fork)` |
-| Replacing the process image | `fs/exec.c` — `SYSCALL_DEFINE3(execve, ...)` |
-| Scheduler | `kernel/sched/core.c`, `kernel/sched/fair.c` (CFS/EEVDF) |
+Not diving into `task_struct`/`copy_process` yet — that struct is one of the
+largest and most historically-accreted in the whole tree, a rough first
+thing to open cold. Doing two smaller, more orienting reads instead:
 
-Don't try to read these top to bottom. Open `task_struct` first, skim the
-fields, notice which ones map to concepts the book just described (pid,
-state, mm, files, thread info) and which ones are a surprise.
+1. **`init/main.c` → `start_kernel()`.** Read it top to bottom. It's close
+   to a linear list of "now bring up memory, now the scheduler, now the
+   timer, now mount root" — gives a map of how the kernel's pieces fit
+   together before understanding any one piece deeply.
+2. **Trace `getpid()` end to end**, since it's small enough to hold in your
+   head: `kernel/sys.c:999` — `SYSCALL_DEFINE0(getpid)`. Follow it from the
+   syscall entry to what it actually touches. This is the generalizable
+   move — same thing you'd do chasing an unfamiliar function later.
+
+`task_struct` (`sched.h:835`), `copy_process()` (`fork.c:2012`), and
+`execve` (`fs/exec.c`) are queued for a later session once there's more
+navigation muscle — see `PLAN.md`.
 
 ## Hands-on (do these, don't just read)
 
