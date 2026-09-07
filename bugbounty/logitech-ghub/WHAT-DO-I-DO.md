@@ -20,8 +20,8 @@ cd $env:USERPROFILE
 browser, click **Raw**, select-all, copy, and **paste the whole thing into the admin PowerShell
 window**. Pasting sidesteps execution-policy problems entirely.
 
-3. It writes everything to **`C:\ghub-recon\`** and copies `app.asar` in there too.
-4. **Zip `C:\ghub-recon` and get it back to the Linux box.** That's the deliverable.
+3. It writes everything to **`D:\research\ghub-recon\`** and copies `app.asar` in there too.
+4. **Zip `D:\research\ghub-recon` and get it back to the Linux box.** That's the deliverable.
 
 That's it. ~2 minutes.
 

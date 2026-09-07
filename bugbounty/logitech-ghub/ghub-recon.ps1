@@ -7,10 +7,15 @@
     Or just paste the whole file into an admin PowerShell window.
 
     Everything is read-only. Nothing is installed, started, stopped, or modified.
-    Output lands in C:\ghub-recon\
+    Output lands in D:\research\   (change $out below if you want it elsewhere)
 #>
 
-$out = 'C:\ghub-recon'
+$out = 'D:\research\ghub-recon'
+
+if (-not (Test-Path (Split-Path $out -Qualifier))) {
+    Write-Host "[-] $(Split-Path $out -Qualifier) not available. Edit `$out at the top of this script." -ForegroundColor Red
+    return
+}
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 function Log($name, $data) {
     $p = Join-Path $out $name
@@ -138,7 +143,7 @@ Log '11_versions.txt' ($bins | ForEach-Object {
     }
 } | Format-Table -AutoSize -Wrap)
 
-Write-Host "`n=== done. Zip C:\ghub-recon and bring it back. ===`n"
+Write-Host "`n=== done. Zip '$out' and bring it back. ===`n"
 Write-Host "Priority files to look at:"
 Write-Host "  05_WRITABLE_IN_PRIVILEGED_PATHS.txt  <- privesc candidates"
 Write-Host "  02b_listening_logi.txt               <- the WebSocket port"
