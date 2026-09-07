@@ -14,6 +14,9 @@ instead.
 > These notes were written before the session. Every line number was checked
 > against the real source. Things marked `?` are things I have NOT verified —
 > those are mine to check.
+>
+> **Closed out 2026-09-07** (a separate sitting): experiments run, results and
+> answers filled in from `# Experiments` down. `?` lines still open on purpose.
 
 ---
 
@@ -559,45 +562,310 @@ then compare with the `fs:[0x28]` load in the prologue.
 
 # Experiments
 
-```bash
-# 1. the two roots of the process tree
-ps -p 1 -o pid,comm ; ps -p 2 -o pid,comm ; ps --ppid 2 | head
+Ran 2026-09-07 on the box itself (Fedora 44). Source line refs are the same
+local clone as the rest of this file — `~/linuxsrc/linux` @ v7.3-rc1; nothing
+touched here differs from what the running kernel does. C programs at the
+bottom of this section.
 
-# 2. pid vs tgid, visible
-ps -eLf | head -20                              # PID column vs LWP column
-cat /proc/self/status | grep -E 'Pid|Tgid|Threads'
+## Exp 1 — the two roots of the process tree
 
-# 3. states in the wild
-ps -eo pid,stat,comm | head -30
-
-# 4. the flag difference, seen directly
-strace -f -e trace=clone,clone3,execve ./forker    2>&1 | grep clone
-strace -f -e trace=clone,clone3,execve ./threader  2>&1 | grep clone
-#   same syscall both times. only the flags differ. that IS the distinction.
+```
+$ ps -p 1 -o pid,comm          $ ps -p 2 -o pid,comm       $ ps --ppid 2 -o pid,comm | head
+  PID COMMAND                     PID COMMAND                 PID COMMAND
+    1 systemd                       2 kthreadd                  3 pool_workqueue_release
+                                                               4 kworker/R-rcu_gp
+                                                               5 kworker/R-sync_wq
+                                                               ...
 ```
 
-Two tiny programs to write: one calling `fork()`, one calling
-`pthread_create()`. The programs don't matter — the flags in the strace
-output do.
+Observed: exactly the split from §1.1. PID 1 is `systemd`, PID 2 is
+`kthreadd`, and *everything* under PID 2 is a `[bracketed]` kernel worker.
+Two families, not one tree. The book's single-rooted §2.1.4 diagram is the
+userspace half only.
+
+## Exp 2 — pid vs tgid, made visible
+
+```
+$ grep -E '^(Pid|Tgid|Threads):' /proc/self/status
+Tgid:    23171
+Pid:     23171         <- single-threaded reader: Pid == Tgid
+Threads: 1
+```
+
+```
+$ ./threader
+main   getpid()=23172 gettid()=23172
+thread getpid()=23172 gettid()=23173
+```
+
+Observed: the two threads report the **same `getpid()` (23172 = the tgid)**
+and **different `gettid()` (23172 / 23173 = the per-task pid)**. This is
+§1.3's table, live: `getpid → tgid`, `gettid → pid`.
+
+```
+$ ./sleeper &                 # 1 process, 4 pthreads
+$ ps -L -p <pid> -o pid,tid,lwp,nlwp,stat,comm
+  PID    TID   LWP NLWP STAT COMMAND
+23210  23210 23210    4 Sl   sleeper
+23210  23212 23212    4 Sl   sleeper
+23210  23213 23213    4 Sl   sleeper
+23210  23214 23214    4 Sl   sleeper
+$ ls /proc/23210/task
+23210  23212  23213  23214
+```
+
+Observed: one `PID`, four `TID`s, `Threads: 4`, and `/proc/<pid>/task/` has
+one dir per task. The kernel really is just holding four `task_struct`s that
+share a tgid — there's no separate "process" object anywhere in this view.
+
+## Exp 3 — states in the wild
+
+```
+$ ps -eo stat --no-headers | cut -c1 | sort | uniq -c | sort -rn
+    294 S        # interruptible sleep — almost everything
+    112 I        # <-- see below
+      1 R        # the ps process itself
+```
+
+`ps` letters seen: `Ss` (sleep + session leader), `Sl` (sleep +
+multithreaded), `I<` (idle + negative nice).
+
+**New find the pre-notes missed:** that `I` is `TASK_IDLE`, and it is *not*
+in the `sched.h:107` list I copied at §1.4. It's defined further down:
+
+```
+include/linux/sched.h:141:  #define TASK_IDLE  (TASK_UNINTERRUPTIBLE | TASK_NOLOAD)
+include/linux/sched.h:121:  #define TASK_NOLOAD 0x00000400
+```
+
+So an idle kernel worker is `TASK_UNINTERRUPTIBLE` (won't take signals) with
+`TASK_NOLOAD` bolted on so it doesn't count toward the load average. §1.4's
+"the book says 3, Linux has more" undercounts — I found a 4th kind just by
+reading `ps` output. All 112 of those `[kworker/...]` sit in it.
+
+**Caught a `D`:** direct I/O is the way in.
+
+```
+$ dd if=/dev/zero of=blob bs=512k count=2000 oflag=direct &   # then hammer /proc/<pid>/stat
+  ... R R R R R ... D ... R ...
+  (a fast /proc/<pid>/stat sampler: ~87000 reads, exactly 1 landed on 'D')
+```
+
+Observed: `dd` with `oflag=direct` really does drop into `D`
+(`TASK_UNINTERRUPTIBLE`) while a BIO is in flight — but on NVMe it's *so*
+brief you catch it maybe 1 sample in ~90k. Which is the whole point of §1.4:
+`D` is normal and microscopic; it only becomes a problem when something
+external (dead NFS mount, stuck disk) makes the task *stay* there.
+
+## Exp 4 — the flag difference, seen directly
+
+```
+$ strace -f -e trace=clone,clone3,execve ./forker
+execve("./forker", ...) = 0
+clone(child_stack=NULL,
+      flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD,
+      child_tidptr=0x...) = 23330
+```
+
+```
+$ strace -f -e trace=clone,clone3,execve ./threader
+execve("./threader", ...) = 0
+clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD
+             |CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID,
+        ...,  exit_signal=0,  stack=0x..., tls=0x...})
+```
+
+Observed: same syscall family both times. `fork()` → `clone` with **no
+sharing flags** (just `SIGCHLD` so the parent gets notified, plus TID
+housekeeping). `pthread_create()` → `clone3` with the **entire sharing menu**
+— `CLONE_VM|FS|FILES|SIGHAND|THREAD|SYSVSEM|SETTLS`. Also `exit_signal=0` vs
+`SIGCHLD`: a thread's death isn't reported to a parent as a child exit.
+That flag list *is* the difference between "process" and "thread". Nothing
+else.
+
+## The programs
+
+```c
+/* forker.c */                          /* threader.c  (cc ... -lpthread) */
+#include <stdio.h>                       #define _GNU_SOURCE
+#include <unistd.h>                       #include <stdio.h>
+#include <sys/wait.h>                     #include <pthread.h>
+int main(void){                           #include <unistd.h>
+  if (fork()==0){                         #include <sys/syscall.h>
+    printf("child pid=%d\n",getpid());    static void *worker(void *a){
+    _exit(0);                               printf("thread getpid()=%ld gettid()=%ld\n",
+  }                                                (long)getpid(),(long)syscall(SYS_gettid));
+  printf("parent pid=%d\n",getpid());      return NULL;
+  wait(NULL);                             }
+}                                         int main(void){
+                                            printf("main   getpid()=%ld gettid()=%ld\n",
+                                                   (long)getpid(),(long)syscall(SYS_gettid));
+                                            pthread_t t;
+                                            pthread_create(&t,NULL,worker,NULL);
+                                            pthread_join(t,NULL);
+                                          }
+```
+
+(`sleeper.c` = `threader` but with 3 workers that `pause()`; the CLONE_FILES
+demo for Q6 is written out under that answer.)
 
 # Questions to answer in writing
 
 This is the real work. The notes above are just setup.
 
-1. `rest_init()` makes PID 1 before PID 2, but the comment says init wants
-   kthreads. What actually breaks if you swap the order?
-2. If `getpid()` returns tgid, what does it return in a program with only one
-   thread — and why does that make the naming almost make sense?
-3. Fig. 2-2 has four arrows. Which ones don't show up in Linux's state field
-   at all, and where does that info live instead?
-4. In one sentence, using how signals get delivered: why can't `kill -9` kill
-   a `D`-state process?
-5. `same_thread_group()` compares `signal` pointers instead of comparing
-   tgids. Why that field? (Guess first, then go look.)
-6. Fig. 2-11 says open files are per-process. Which flag would give me two
-   tasks that share file descriptors but *not* memory — and is that a process
-   or a thread?
+**1. `rest_init()` makes PID 1 before PID 2, but the comment says init wants
+kthreads. What actually breaks if you swap the order?**
+
+Two separate orderings are doing two separate jobs, and it's easy to conflate
+them.
+
+- *Creation order* (`kernel_clone(init)` then `kernel_thread(kthreadd)`) only
+  exists so init grabs pid 1. PIDs are handed out first-come. Swap these two
+  calls and init becomes pid 2 — cosmetic-ish, but a lot of userspace and the
+  kernel itself special-case `pid == 1` (it's the reaper, it can't be killed
+  by normal signals, `/sbin/init`), so "cosmetic" is generous.
+- *The thing the comment is actually about* is a **run order**, enforced
+  separately: `kernel_init` (pid 1) calls `wait_for_completion(&kthreadd_done)`
+  early in `kernel_init_freeable()`, and `kthreadd` calls
+  `complete(&kthreadd_done)` once it's up. So pid 1 is *created* first but is
+  *parked* until pid 2 is alive.
+
+What breaks if pid 1 runs its kthread-using code before kthreadd exists:
+`kthread_create_on_node()` builds a request and hands it to kthreadd by
+adding it to `kthread_create_list` and waking `kthreadd`. With no kthreadd
+task there is nothing to wake and nothing to service the list — the creator
+blocks forever, or derefs through a not-yet-set pointer. The comment's word
+is "OOPS." The `kthreadd_done` completion is the guard that makes the
+create-init-first ordering safe.
+
+**2. If `getpid()` returns tgid, what does it return in a program with only
+one thread — and why does that make the naming almost make sense?**
+
+In a single-threaded program the process is one task, that task is its own
+group leader, and `copy_process()` took the `else` branch at `fork.c:2384`:
+`p->tgid = p->pid`. So **tgid == pid**, and `getpid()` and `gettid()` return
+the same number. Seen in Exp 2: `main getpid()=23172 gettid()=23172` before
+the second thread exists.
+
+That's why the name isn't a lie for most code: the overwhelming majority of
+processes have one thread, and for them "getpid returns the process id" is
+just true. The name only starts misleading you the moment you call
+`pthread_create` — and by then you're expected to know `gettid` exists.
+
+**3. Fig. 2-2 has four arrows. Which ones don't show up in Linux's state
+field at all, and where does that info live instead?**
+
+Fig. 2-2's arrows: (1) running→blocked, (2) running→ready (preempted),
+(3) ready→running (dispatched), (4) blocked→ready (woken).
+
+- **Arrows 2 and 3 never touch `task->__state`.** A runnable task is
+  `TASK_RUNNING` (0) whether it's currently on a CPU or just waiting its
+  turn. Being preempted or dispatched doesn't change that field.
+- **Arrows 1 and 4 do.** Blocking runs `set_current_state(TASK_INTERRUPTIBLE
+  / TASK_UNINTERRUPTIBLE)`; waking runs `try_to_wake_up()` which sets it back
+  to `TASK_RUNNING`.
+
+Where "is it actually on a CPU / is it runnable" really lives: the
+scheduler's runqueue. `task_struct::on_cpu` (running right now on some CPU),
+`task_struct::on_rq` / `sched_entity::on_rq` (queued as runnable), and
+membership in a per-CPU `struct rq`. §1.4 already said this — the experiment
+just confirms the state field genuinely has nothing to distinguish "Running"
+from "Ready": both were the same `S`→`R` blob in `ps`, and the `R` count was
+1 (only the sampler itself was mid-`read`).
+
+**4. In one sentence, using how signals get delivered: why can't `kill -9`
+kill a `D`-state process?**
+
+Delivering SIGKILL means flagging it pending and **waking the target** so
+that on its way back toward user mode it runs `get_signal()` and dies — a
+task in `TASK_UNINTERRUPTIBLE` (`D`) will not wake for that, so it never
+reaches the code that looks at pending signals, and the kill just sits
+pending until the task leaves `D` on its own.
+
+**5. `same_thread_group()` compares `signal` pointers instead of comparing
+tgids. Why that field?**
+
+Guess (before looking): because sharing that struct *is* what being one
+process means, so pointer identity is the definition and tgid is a
+derived label.
+
+After looking — `copy_signal()` in `kernel/fork.c`: if `CLONE_THREAD` is set
+it returns early **without allocating** a `signal_struct`; the new task keeps
+`current->signal` (refcount++). Without `CLONE_THREAD` a fresh one is
+`kmem_cache_zalloc`'d. So `p1->signal == p2->signal` is *exactly* the
+`CLONE_THREAD` relation, by construction.
+
+`->signal` (not `->sighand`) is the right field because it's the group-wide
+box: shared pending signals for the whole process, `group_exit_code` /
+`group_stop_count`, the live-thread count, shared rlimits, controlling tty,
+per-process timers. `->sighand` is just the handler table (also shared for
+threads, via `CLONE_SIGHAND`, but that's a separate flag you *could* set
+without `CLONE_THREAD`). And a pointer compare is one instruction that can't
+be confused by PID-namespace remapping the way comparing two `tgid` integers
+across namespaces could get subtle.
+
+**6. Which flag would give me two tasks that share file descriptors but
+*not* memory — and is that a process or a thread?**
+
+`CLONE_FILES` **without** `CLONE_VM` (and without `CLONE_THREAD`). Proven:
+
+```c
+/* clone(child, stk, CLONE_FILES|SIGCHLD, &fd);  child does: close(fd); */
+CLONE_FILES : after child close(fd), parent fcntl(fd) = -1  -> fd GONE in parent too (shared table)
+fork()      : after child close(fd), parent fcntl(fd) =  0  -> still open (private copy of the table)
+```
+
+(Note: this had to test with `close()`, not `lseek()` — plain `fork()`
+already shares the open *file description*, so the byte offset moves either
+way. What `CLONE_FILES` adds is sharing the descriptor *table*: `close` /
+`open` / `dup` in one task are visible in the other.)
+
+And it's a **process**, not a thread:
+
+```c
+/* clone(child, stk, CLONE_FILES|SIGCHLD, 0);  -- no CLONE_THREAD */
+parent: getpid()=23460 gettid()=23460
+ child : getpid()=23461 gettid()=23461   -> its own tgid
+```
+
+Own tgid, own address space, own `signal_struct` — a distinct process that
+happens to share one resource. This is §2.3's point made concrete: "shared
+vs private" is per-flag, not a fixed property of "thread." You can pick any
+subset.
 
 # My own notes
 
-_(below here — during/after. raw is fine. wrong is fine.)_
+Done 2026-09-07. This was the half that was missing — the 09-04 file was all
+prep, no session.
+
+What actually landed for me, doing it instead of reading it:
+
+- **`getpid()`/`gettid()` stopped being a "backwards naming" trivia fact.**
+  Seeing `main` and `thread` print the *same* `getpid()` and *different*
+  `gettid()` in three lines of output made it obvious: the number that stays
+  constant across a thread spawn is the process identity, and Linux just
+  happens to store that in a field it named `tgid` and expose it through a
+  syscall it named `getpid`. The names describe the API contract, not the
+  data structure.
+
+- **The clone flag lists are the whole lecture.** §2.2.4 vs §2.2.5, Fig 2-11's
+  two columns, "the Linux model blurs the line" — all of it collapses into
+  one `strace` diff: `SIGCHLD` alone vs
+  `VM|FS|FILES|SIGHAND|THREAD|SYSVSEM|SETTLS`. If I'd opened `strace` first I
+  might not have needed most of §2.2.
+
+- **`D` is real but tiny.** I half-expected `oflag=direct` to just park `dd`
+  in `D` for a second. Instead: 1 hit in ~87k samples. The pathology isn't
+  "a task entered `D`" — that happens constantly — it's "a task can't
+  *leave*." Reframed how I think about hung processes.
+
+- **The book undercounts and so did I.** §1.4 says "the book says 3, Linux
+  has more" and lists 7 from `sched.h:107`. Then `ps` showed 112 processes in
+  a state (`I` / `TASK_IDLE`) that isn't in that list — it's 20-odd lines
+  further down in the same header. Lesson: grep the whole file, not the first
+  block that looks like the answer.
+
+Open threads I'm deliberately *not* chasing today (they're the `?` lines
+above — namespaces/`vnr`, the glibc 1:1 claim, the `fs:[0x28]` canary/TLS
+ABI check). Next up per PLAN.md is the process-creation source dive:
+`task_struct` (`sched.h:835`) → `copy_process()` (`fork.c:2012`) → `execve`.
