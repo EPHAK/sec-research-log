@@ -17,6 +17,10 @@ instead.
 >
 > **Closed out 2026-09-07** (a separate sitting): experiments run, results and
 > answers filled in from `# Experiments` down. `?` lines still open on purpose.
+>
+> **2026-09-08:** added §1.6 (`struct task_struct` — what a process-table
+> entry actually holds). Line numbers in that section are against
+> v7.3.0-rc2 `include/linux/sched.h`.
 
 ---
 
@@ -355,6 +359,137 @@ a container." You need a separate lookup table per namespace.
 
 The book's array is a good way to *think* about it. It's just not what's
 there.
+
+## 1.6 What a process actually *is*: `struct task_struct`
+
+§2.1.6 (p.95) says the OS keeps, per process, *"important information about
+the process' state, including its program counter, stack pointer, memory
+allocation, the status of its open files, its accounting and scheduling
+information, and everything else about the process that must be saved."*
+Fig. 2-4 draws that as a tidy three-column table — about 25 rows, grouped
+into *process management*, *memory management*, *file management*.
+
+In Linux that "entry" is one struct, and it's the single most important
+data structure in the kernel:
+
+`include/linux/sched.h:835` — and it doesn't close until **line 1690**
+(`} __attribute__ ((aligned (64)));`). ~850 lines, hundreds of fields.
+
+**Why I couldn't find it just by scrolling.** Three reasons:
+
+- It's ~850 lines long and a big fraction of every screen is `#ifdef
+  CONFIG_...` / `#endif`. The fields are real; most are gated on a build
+  option.
+- It doesn't open with anything that looks "process-y". The first field
+  (`sched.h:841`) is `struct thread_info thread_info;`, itself behind
+  `#ifdef CONFIG_THREAD_INFO_IN_TASK`. `pid` doesn't appear until
+  **line 1080**.
+- The bulk of it is bracketed by two markers — `randomized_struct_fields_start`
+  (`:852`) and `..._end` (`:1689`). At build time the layout between those
+  can be shuffled, so source order doesn't even map to memory order.
+
+Just jump straight in:
+
+```
+grep -n 'struct task_struct {' include/linux/sched.h     # -> 835
+```
+
+**Fig. 2-4's rows, mapped onto the real fields** (v7.3, lines in `sched.h`):
+
+| Fig. 2-4 row | `task_struct` field | line |
+|---|---|---|
+| Registers, program counter, PSW | `struct thread_struct thread` — CPU state, saved on switch | 1683 |
+| Stack pointer / kernel stack | `void *stack` | 854 |
+| Process state | `unsigned int __state` | 843 |
+| Priority, scheduling parameters | `prio` / `static_prio` / `rt_priority`; `struct sched_entity se` | 884, 889 |
+| Process ID | `pid_t pid`, `pid_t tgid` | 1080–1081 |
+| Parent process | `real_parent`, `parent` | 1094, 1097 |
+| (children / siblings) | `struct list_head children`, `sibling` | 1102–1103 |
+| Process group / session | inside `struct signal_struct *signal` | 1218 |
+| Signals | `signal`, `sighand`, `blocked`, `pending` | 1218–1224 |
+| Time started, CPU time used | `start_time`; `utime` / `stime`; `nvcsw` / `nivcsw` | 1151, 1131, 1147 |
+| Memory-management column | `struct mm_struct *mm`, `*active_mm` | 980–981 |
+| Root dir, working dir | `struct fs_struct *fs` | 1204 |
+| File descriptors | `struct files_struct *files` | 1207 |
+| User ID, Group ID | `const struct cred *cred`, `*real_cred` | 1176, 1173 |
+
+Everything in Fig. 2-4 is in there. The book isn't wrong — it's drawing 25
+rows where Linux has more than a screenful of scheduler fields alone.
+
+**The real structural difference: Linux doesn't inline it all.** Fig. 2-4's
+"memory management" and "file management" columns are, in Linux, *pointers
+to separate structs*:
+
+```
+        struct task_struct   (one per thread)
+        ┌───────────────────────────────────────┐
+        │ __state  pid  tgid  comm  prio  se ... │  inlined: this task's own
+        │                                       │
+        │ mm      ──────►  struct mm_struct      │  address space
+        │ fs      ──────►  struct fs_struct      │  cwd / root
+        │ files   ──────►  struct files_struct   │  the fd table
+        │ signal  ──────►  struct signal_struct  │  process-wide signal state
+        │ sighand ──────►  struct sighand_struct │  handler table
+        │ cred    ──────►  struct cred           │  uid / gid / caps
+        │ nsproxy ──────►  struct nsproxy        │  which namespaces
+        │ cgroups ──────►  struct css_set        │  which cgroups
+        └───────────────────────────────────────┘
+```
+
+That indirection *is* the thread mechanism from §2.2. `fork()` allocates
+fresh copies of those sub-structs; `pthread_create()` passes `CLONE_VM |
+CLONE_FILES | CLONE_FS | CLONE_SIGHAND | CLONE_THREAD`, and the new
+`task_struct` just **copies the pointers** — same `mm`, same `files`, same
+`signal`. §2.2's "the difference is one `if`" and this are the same fact
+from two sides: the `if` decides whether `->signal` is shared; the struct
+layout is *why* sharing one pointer is all it takes.
+
+So §1.5 and §1.6 are the two halves of the book's "process table":
+
+- **§1.6 (this) — what one entry holds:** `struct task_struct`.
+- **§1.5 — how entries are stored and found:** not `table[pid]`, but each
+  one allocated on its own, chained on the `tasks` list (`sched.h:976`),
+  looked up by PID through the per-namespace IDR.
+
+**Why `__state` is field #2.** The struct opens with `thread_info` (`:841`),
+then `__state` (`:843`), then the marker `randomized_struct_fields_start`
+(`:852`). The source comment on that marker: *"Only scheduling-critical
+items should be added above here."* What sits before it is at a fixed offset
+in the first cache line(s) and is exempt from the build-time layout
+randomization that can reorder everything after. `__state` — the
+Running/blocked field from §1.4 — is put there because it's read on every
+scheduling decision.
+
+**`current` is a `struct task_struct *`.** Every `current->pid`,
+`current->mm`, `current->cred` in kernel code — and in every kernel-exploit
+write-up — is a reach into this struct for the running task. Which leads to:
+
+**Security notes.**
+
+- The standard kernel-LPE finisher, `commit_creds(prepare_kernel_cred(NULL))`,
+  is just getting `current->cred` (`sched.h:1176`) to point at a
+  full-privilege `cred`. The whole target is one pointer in this struct.
+- `unsigned long stack_canary` lives here too (`sched.h:1085`, under
+  `CONFIG_STACKPROTECTOR`) — the *kernel* stack protector, separate from the
+  userland `%fs:0x28` one in §2.5, same idea one level down.
+- `struct sysv_sem sysvsem` / `struct sysv_shm sysvshm` (`sched.h:1195`) —
+  System V IPC state hangs straight off the task. First hook into the IPC
+  half of this topic.
+
+**Check it** — without reading 850 lines of `#ifdef`:
+
+```
+# real field offsets + sizes for the running kernel's build:
+pahole -C task_struct /sys/kernel/btf/vmlinux | less
+
+# many of these fields, per task, as text:
+grep -E '^(Name|State|Tgid|Pid|PPid|Uid|Gid|Threads):' /proc/self/status
+```
+
+`?` — haven't opened `mm_struct` / `files_struct` / `signal_struct`
+themselves yet (next PLAN.md item). `?` — haven't run `pahole` to see how
+big `task_struct` really is under a normal config. `?` — is
+`thread_info`-first an x86 thing or every arch?
 
 ---
 
