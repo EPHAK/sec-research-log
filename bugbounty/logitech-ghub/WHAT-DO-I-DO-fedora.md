@@ -109,8 +109,10 @@ Only after tasks 1 and 3. This is the one way the engagement comes back to life.
   has it. Is any privileged operation gated on that flag *separately*, and is any operation
   reachable **before** the flag is evaluated?
 
-Be honest here. The likely answer is "correctly implemented", exactly as the depot path-traversal
-check turned out to be. Write that down plainly if so.
+Read the actual bytes for each of these; do not infer from the function names. The publisher
+compare in particular is worth reading instruction by instruction — `Logitech Inc` and
+`Logitech Inc.` both being accepted is consistent with an exact compare against two literals *and*
+with a substring match, and those two have very different consequences.
 
 ---
 
@@ -136,10 +138,22 @@ I will run the pipe handshake on Windows with that in hand.
 - Do **not** claim browser reachability. This is a local-process attack: attacker already has code
   execution as a normal user; the gain is SYSTEM. State it precisely; do not inflate it.
 
-## If tasks 1–4 all come back clean
+## Report what you find — in both directions
 
-Then say so and stop. Three sessions in, the honest summary is that G HUB's privileged surface is
-better built than the initial recon suggested: ACLs hardened, no plaintext update channel, a
-correct path-traversal check, and a peer-verification design that resolves the real PID from the
-kernel and pins it against PID reuse. Writing "no finding, here is what was ruled out and why" is
-a legitimate outcome and is more useful than a fourth session re-testing the same surface.
+Do not predict the outcome before reading the code, and do not let the last three sessions'
+closed leads set the expectation for this one. Several of those closures were correct; one
+(`"no Logitech named pipe exists"`) was a false negative that survived a whole session and nearly
+sent the Windows box chasing a dead lead. Priors are not evidence.
+
+Two failure modes, equally bad:
+
+- **Manufacturing.** Writing up "the check looks bypassable" without the bytes to prove it. The
+  7-question gate exists to catch this; question 6 is not negotiable.
+- **Rubber-stamping.** Concluding "correctly implemented" because the function names look right
+  and the previous checks held up. The depot path-traversal check *was* correct — that says
+  nothing about this one. Read the instructions.
+
+If a task genuinely resolves clean, say so in one line and move to the next. If any of the four
+opens a door — a reachable mode 0, a substring publisher compare, a derivable pipe name, an
+operation reachable before the `LogitechSigned` flag — that is the finding, and it is worth the
+whole engagement. Chase it.
