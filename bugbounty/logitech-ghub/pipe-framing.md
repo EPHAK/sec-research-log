@@ -437,3 +437,138 @@ right path was not found.
   wrong. The GUID is a literal in `.rdata`.
 - Session 3 §4 ("the entire defence is the post-accept signature check"): correct, and now
   stronger — the `Everyone: 0x1FFFFF` DACL is explicit in the code, not incidental.
+
+---
+
+## 10. Verification — how each claim above was checked
+
+Everything in §1–§8 was first read out of Ghidra's decompiler. Decompiler output is an
+interpretation, so each load-bearing constant was then re-checked by a **second, independent
+method**: raw bytes lifted from the PE and disassembled with `objdump` (not Ghidra), a
+cross-check against a different binary, and an executable round-trip.
+
+### 10.1 Raw disassembly (objdump, independent of Ghidra)
+
+| Claim | Bytes | Disassembly |
+|---|---|---|
+| `dwPipeMode = 8` | `41 b8 08 00 00 00` @ `140c267c0` | `mov r8d,0x8` — 3rd arg to `FUN_140c26fd0` |
+| 4-byte length prefix | `48 8d 87 98 00 00 00` / `48 c7 44 24 28 04 00 00 00` @ `140c2031f` | `lea rax,[rdi+0x98]` then `mov QWORD PTR [rsp+0x28],0x4` — an `asio::mutable_buffer{&conn+0x98, 4}` |
+| `content_type = 0x1100001` | `41 b8 01 00 10 01` @ `14034f36d` | `mov r8d,0x1100001`, 3rd arg to the send call at `14034f37b` |
+| pipe name is a literal | `48 8d 05 89 ff 2d 00` / `48 c7 41 08 24 00 00 00` @ `140e04ef0` | `lea rax,[rip+0x2dff89]` → `0x1410e4e80`, `mov [rcx+8],0x24`. Bytes at `0x1410e4e80` are exactly `a62ed1c1-e1a9-5495-9038-16bd49ec7341` |
+| 9180 / 9189 | `b8 dc 23 00 00 c3` / `b8 e5 23 00 00 c3` | `mov eax,0x23dc; ret` and `mov eax,0x23e5; ret` |
+| publisher compare is exact | `48 83 fb 0c` / `75 16` @ `140a5e9b7` | `cmp rbx,0xc; jne` then `memcmp(...,0xc)`; else `cmp rbx,[0x14133b508]` (that qword = **13**) then `memcmp(...,13)`. Length first, full-length memcmp. No substring search anywhere |
+
+The `llc_check` chain, instruction by instruction, at `140077715`:
+
+```
+movups xmm0,[rip+0xea639c]   # 0x140f1dab8 -> string_view{ptr=0x140f1dfd0, len=9}
+movaps [rsp+0x580],xmm0      #   bytes at 0x140f1dfd0 = "llc_check"
+mov    dl,0x1                # 2nd arg: default = true
+lea    rcx,[rsp+0x580]
+call   0x1400277d0           # GetFeatureFlag(name, default)
+mov    [rsp+0xdf0],al        # save the result
+lea    rdx,[rsp+0xdd0]
+lea    rcx,[rsp+0x3e0]       # <- the ServerConfig lives at rsp+0x3e0
+call   0x140024fe0           #    config.name = pipe name
+movzx  eax,BYTE PTR [rsp+0xdf0]
+mov    [rsp+0x400],al        # <- rsp+0x400 = config + 0x20   *** the flag lands here ***
+mov    ecx,0x20
+call   0x140dff73c           # operator new(0x20)
+lea    rdx,[rsp+0x3e0]       #    the config
+call   0x14019a430           # Server::Server(config)
+```
+
+`config+0x20` is exactly the byte `Server::Impl`'s constructor copies to `Impl+0x58`, which
+`Impl::start` turns into `ConnectionConfig+0x34`. The chain in §6.2 is confirmed in raw bytes,
+not inferred from the decompiler.
+
+### 10.2 Cross-binary check
+
+Counting the literals across five shipped binaries:
+
+| | updater | agent | system_tray | software_manager | gl |
+|---|---|---|---|---|---|
+| `a62ed1c1-…7341` | 1 | **1** | 0 | 0 | 0 |
+| `llc_check` | 1 | 0 | 1 | 0 | 1 |
+| `logi_features.cfg` | 1 | 1 | 2 | 1 | 1 |
+| imm `0x1100001` | 1 | **1** | 0 | 0 | 0 |
+
+**`lghub_agent.exe` — the legitimate client — carries the identical GUID literal and the
+identical `0x1100001` immediate.** In the agent's `.rdata` the two pipe GUIDs sit adjacent:
+
+```
+… "e0c10619-60c9-5414-a4e8-5d9e19d4dedc"  "a62ed1c1-e1a9-5495-9038-16bd49ec7341" "public" "ghub13" …
+```
+
+i.e. the pipe the agent *hosts* and the pipe it *connects to*, both compile-time constants,
+and both matching the runtime table in `windows-session-2-results.md` §1. That is a second
+binary, independently agreeing. Neither side derives the name at runtime.
+
+`llc_check` appears only in the three binaries that host a `named_pipes::Server`; the agent,
+which is a client here, does not read it. Consistent.
+
+### 10.3 Round-trip against the shipped schema
+
+`tools/roundtrip_check.py` pulls the `FileDescriptorProto` blobs for `envelope.proto` and
+`v1/connections.proto **out of `lghub_updater.exe` itself**, builds message classes from them
+with `google.protobuf`, and parses the generated frame:
+
+```
+recovered logi/updater_ipc/protocol/messages/envelope.proto: messages = ['Envelope']
+recovered .../v1/connections.proto: ['EndpointInformation','HelloRequest','HelloResponse', …]
+frame = 71 bytes; prefix says 67, body is 67  -> OK
+  message_id: 1
+  flags: EXPECTS_REPLY
+  content_type: 17825793          (= 0x1100001)
+  Endpoint { Name:"probe" Identifier:"probe" Version:"1.0.0" ProcessID:1234
+             ExecutablePath:"C:\\probe\\probe.exe" }
+  Language: "en-US"
+  SupportedProtocols: 1
+ALL ASSERTIONS PASSED
+```
+
+The frame is well-formed against the descriptors the product itself ships. Field numbers and
+the packed encoding of `repeated uint32` are not guesses.
+
+### 10.4 The probe script was actually executed
+
+PowerShell 7.4.6 was installed locally and `windows/hello-probe.ps1` was run against a mock
+server (`tools/mock-updater.ps1`) that speaks the recovered framing. All four paths were
+exercised:
+
+| Scenario | Result |
+|---|---|
+| encoder self-test | produced hex byte-identical to `build_hello.py` |
+| self-test with the expected hex deliberately corrupted | **aborts, exit 4, never opens the pipe** |
+| mock replies with a `HelloResponse` | frame accepted; mock decoded `content_type = 0x1100001`; probe read the reply and printed the finding path. Reply carried `10 01` and `20 81 80 80 0a`, the exact marker bytes the script tells the operator to look for |
+| mock reads then closes | `RESULT: DROPPED - server closed the pipe without replying`, exit 0 |
+| server accepts but never replies | `RESULT: DROPPED - no reply within the timeout`, exit 0 |
+| no server at all | `CONNECT FAILED`, exit 2 |
+
+**Two real defects were found and fixed by running it**, both of which would have aborted the
+test on the Windows box:
+
+1. `[Security.Principal.WindowsIdentity]::GetCurrent()` threw and killed the script. Now
+   wrapped in try/catch — context reporting can never abort the probe.
+2. `$pipe.ReadTimeout = …` throws `"Timeouts are not supported on this stream"` —
+   `PipeStream` does not support it. Replaced with a `ReadAsync` + `Task.Wait(timeout)`
+   helper.
+
+This is the class of failure that made `find-logi-endpoint.ps1` v1 useless for a whole
+session. The script now parses clean and behaves correctly on every path.
+
+**Caveat:** the tests ran on PowerShell 7.4.6 on Linux. The Windows box may use Windows
+PowerShell 5.1. The script avoids 7-only syntax and parses clean, but **run
+`-SelfTestOnly` first on the target** — it exercises the entire encoder on whatever
+PowerShell is actually there, in a few seconds, without touching the pipe.
+
+### 10.5 What is *not* verified
+
+- Nothing has been sent to a live G HUB process. The whole handshake question is still
+  question 6 of the gate, unmet.
+- The `C:\` / `C:\Program Files` ACLs are not knowable from here. §6.3 establishes that
+  `C:\logi_features.cfg` is *in the search path*; whether an unprivileged user can create it
+  is a Windows-side check and is where the remaining lead lives or dies.
+- I traced `GetFeatureFlag`'s map to one populate path (`logi_features.cfg`). The binary also
+  contains a `FeatureCanary` subsystem with its own `get_flag`; I did **not** prove it never
+  writes into the same map. If it does, and its cache is writable, that is a second route.
