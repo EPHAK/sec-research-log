@@ -205,6 +205,12 @@ time, resolves the true image path and verifies it is Logitech-signed. The other
    the owning process was never checked.
 3. `CreateNamedPipeW` in the updater belongs to **crashpad** (`\\.\pipe\crashpad_%lu_`), not to
    the IPC. I checked this specifically; it does not tell us the IPC transport either way.
+4. **There is a concrete signal pointing the other way.** Session 1 saw 9180 answer a well-formed
+   `HTTP/1.0 404`. A raw protobuf socket would not do that — but a **websocketpp** server would,
+   and the updater links websocketpp (68 string hits). So 9180 may be a WebSocket endpoint, and
+   the real IPC may be the pipe-based `LocalServerImpl` path — the one that *is* verified. If so
+   this lead is dead and the check I found is the correct, enforced one. The prober now tries a
+   WebSocket upgrade for exactly this reason.
 
 **All three are settled by one cheap dynamic test on Windows — see the companion
 `WHAT-DO-I-DO-windows.md`.**

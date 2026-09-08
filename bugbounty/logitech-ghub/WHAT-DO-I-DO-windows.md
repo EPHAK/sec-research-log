@@ -54,14 +54,33 @@ python ipc_probe.py --port 9180
 ```
 
 `ipc_probe.py` is stdlib-only (no pip). It builds a real `HelloRequest` envelope — the encoder
-was verified against `google.protobuf` on the Linux box — and tries it under five framings
-(raw / 4-byte BE / 4-byte LE / varint-prefixed / HTTP POST) across `content_type` 0–16.
+was verified against `google.protobuf` on the Linux box — and tries it two ways:
 
-If nothing lands, widen the sweep:
+1. **Raw framings** over the TCP socket: raw / 4-byte BE / 4-byte LE / varint-prefixed / HTTP POST.
+2. **WebSocket**, which is the more likely one. The updater links **websocketpp** (68 string hits),
+   and session 1 saw 9180 answer a well-formed `HTTP/1.0 404` — that is how a websocketpp server
+   replies to a non-WebSocket request. The prober attempts an upgrade across paths
+   `/`, `/ipc`, `/updater`, `/v1` and the two subprotocol names recovered from the binary
+   (`logi.updater_ipc.protocol.v1.protobuf`, `logi.updater_ipc.protocol.protobuf`), plus no
+   subprotocol. It validates `Sec-WebSocket-Accept`, captures anything the server pushes
+   unprompted, then speaks `Envelope` over binary frames.
+
+If the raw framings return nothing it falls through to the WebSocket attempt automatically. To run
+only the WebSocket probe:
+
+```powershell
+python ipc_probe.py --port 9180 --ws
+```
+
+If nothing lands, widen the `content_type` sweep:
 
 ```powershell
 python ipc_probe.py --port 9180 --scan-types 0 64
 ```
+
+**Record the non-101 handshake responses too** — they are diagnostic. A `400` means the server
+speaks WebSocket but rejected your subprotocol; a `404` means wrong path; a connection reset means
+it is not an HTTP server at all. Do not treat "no 101" as "authenticated".
 
 ## Step 3 — THE TEST
 

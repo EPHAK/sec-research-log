@@ -18,7 +18,7 @@ Usage:
   python ipc_probe.py --pipe logi.updater_ipc  # probe a named pipe instead
   python ipc_probe.py --scan-types 0 64        # enumerate content_type values
 """
-import argparse, os, socket, sys, time
+import argparse, base64, hashlib, os, socket, sys, time
 
 # ---------- minimal protobuf wire encoder (stdlib only) ----------
 
@@ -123,6 +123,159 @@ FRAMINGS = {
                              b"\r\nConnection: close\r\n\r\n" + b),
 }
 
+# ---------- minimal WebSocket client (stdlib only) ----------
+
+WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+# subprotocols recovered from the binaries
+SUBPROTOCOLS = [
+    "logi.updater_ipc.protocol.v1.protobuf",
+    "logi.updater_ipc.protocol.protobuf",
+    None,
+]
+WS_PATHS = ["/", "/ipc", "/updater", "/v1"]
+
+def ws_frame(payload, opcode=2):
+    """Client -> server frame. Client frames MUST be masked (RFC 6455 5.3)."""
+    fin_op = 0x80 | opcode
+    mask = os.urandom(4)
+    n = len(payload)
+    if n < 126:
+        hdr = bytes([fin_op, 0x80 | n])
+    elif n < 65536:
+        hdr = bytes([fin_op, 0x80 | 126]) + n.to_bytes(2, "big")
+    else:
+        hdr = bytes([fin_op, 0x80 | 127]) + n.to_bytes(8, "big")
+    masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+    return hdr + mask + masked
+
+def ws_parse(buf):
+    """Parse as many complete frames as possible. -> ([(opcode, payload)], leftover)"""
+    frames, i = [], 0
+    while i + 2 <= len(buf):
+        b0, b1 = buf[i], buf[i + 1]
+        opcode = b0 & 0x0F
+        masked = b1 & 0x80
+        ln = b1 & 0x7F
+        j = i + 2
+        if ln == 126:
+            if j + 2 > len(buf): break
+            ln = int.from_bytes(buf[j:j+2], "big"); j += 2
+        elif ln == 127:
+            if j + 8 > len(buf): break
+            ln = int.from_bytes(buf[j:j+8], "big"); j += 8
+        mask = b""
+        if masked:
+            if j + 4 > len(buf): break
+            mask = buf[j:j+4]; j += 4
+        if j + ln > len(buf): break
+        payload = buf[j:j+ln]
+        if mask:
+            payload = bytes(c ^ mask[k % 4] for k, c in enumerate(payload))
+        frames.append((opcode, payload))
+        i = j + ln
+    return frames, buf[i:]
+
+def ws_handshake(sock, host, port, path="/", subprotocol=None, origin=None):
+    """Returns (ok, status_line, raw_headers, leftover_bytes)."""
+    key = base64.b64encode(os.urandom(16)).decode()
+    req = ("GET %s HTTP/1.1\r\n" % path +
+           "Host: %s:%d\r\n" % (host, port) +
+           "Upgrade: websocket\r\n" +
+           "Connection: Upgrade\r\n" +
+           "Sec-WebSocket-Key: %s\r\n" % key +
+           "Sec-WebSocket-Version: 13\r\n")
+    if subprotocol:
+        req += "Sec-WebSocket-Protocol: %s\r\n" % subprotocol
+    if origin:
+        req += "Origin: %s\r\n" % origin
+    req += "\r\n"
+    sock.sendall(req.encode())
+
+    buf = b""
+    deadline = time.time() + 3
+    while b"\r\n\r\n" not in buf and time.time() < deadline:
+        try:
+            chunk = sock.recv(4096)
+        except socket.timeout:
+            break
+        if not chunk:
+            break
+        buf += chunk
+    if b"\r\n\r\n" not in buf:
+        return False, "<no response>", b"", b""
+    head, leftover = buf.split(b"\r\n\r\n", 1)
+    status = head.split(b"\r\n")[0].decode("latin1")
+    if b" 101 " not in head[:32]:
+        return False, status, head, leftover
+    expect = base64.b64encode(
+        hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
+    if expect.encode().lower() not in head.lower():
+        return False, status + "  (bad Sec-WebSocket-Accept)", head, leftover
+    return True, status, head, leftover
+
+def probe_websocket(host, port, content_types):
+    """Try a WebSocket upgrade, then speak Envelope over binary frames."""
+    print("=" * 72)
+    print("Probing WebSocket on %s:%d" % (host, port))
+    print("=" * 72)
+    hits = []
+    for path in WS_PATHS:
+        for sp in SUBPROTOCOLS:
+            try:
+                s = socket.create_connection((host, port), timeout=3)
+                s.settimeout(2.5)
+            except Exception as e:
+                print("  [!] connect failed: %s" % e)
+                return hits
+            try:
+                ok, status, head, leftover = ws_handshake(s, host, port, path, sp)
+                label = "path=%-9s subprotocol=%s" % (path, sp or "<none>")
+                if not ok:
+                    print("  %-58s -> %s" % (label, status))
+                    continue
+                print("\n  *** UPGRADED  %s" % label)
+                print("      %s" % status)
+                for line in head.decode("latin1").split("\r\n")[1:]:
+                    if line.lower().startswith("sec-websocket-protocol"):
+                        print("      %s" % line)
+
+                # anything the server pushes unprompted (45654 does exactly this)
+                pending = leftover
+                try:
+                    pending += s.recv(65535)
+                except socket.timeout:
+                    pass
+                frames, pending = ws_parse(pending)
+                for op, pl in frames:
+                    print("      <- unsolicited frame opcode=%d (%d bytes)" % (op, len(pl)))
+                    for l in dump_proto(pl)[:20]:
+                        print("      " + l)
+
+                # now speak Envelope
+                for ct in content_types:
+                    env = envelope(1, ct, hello_request())
+                    try:
+                        s.sendall(ws_frame(env))
+                        raw = s.recv(65535)
+                    except Exception:
+                        raw = b""
+                    if not raw:
+                        continue
+                    fr, _ = ws_parse(raw)
+                    for op, pl in fr:
+                        if op == 8:
+                            print("      <- close frame after content_type=%d" % ct)
+                            continue
+                        print("\n      *** REPLY content_type=%d (%d bytes)" % (ct, len(pl)))
+                        for l in dump_proto(pl)[:25]:
+                            print("      " + l)
+                        hits.append((path, sp, ct, pl))
+            finally:
+                try: s.close()
+                except Exception: pass
+    return hits
+
 # ---------- transports ----------
 
 class TcpTransport:
@@ -220,13 +373,20 @@ def main():
     ap.add_argument("--pipe", default=None)
     ap.add_argument("--scan-types", nargs=2, type=int, metavar=("LO", "HI"))
     ap.add_argument("--framing", default=None, choices=list(FRAMINGS))
+    ap.add_argument("--ws", action="store_true", help="WebSocket only")
     args = ap.parse_args()
 
     cts = range(args.scan_types[0], args.scan_types[1] + 1) if args.scan_types else range(0, 17)
     frs = [args.framing] if args.framing else list(FRAMINGS)
-    tr = PipeTransport(args.pipe) if args.pipe else TcpTransport(args.host, args.port)
-
-    hits = probe(tr, cts, frs)
+    if args.ws:
+        hits = probe_websocket(args.host, args.port, cts)
+    else:
+        tr = PipeTransport(args.pipe) if args.pipe else TcpTransport(args.host, args.port)
+        hits = probe(tr, cts, frs)
+        if not hits and not args.pipe:
+            print("\n  no raw-framing response; trying a WebSocket upgrade "
+                  "(the updater links websocketpp)\n")
+            hits = probe_websocket(args.host, args.port, cts)
     print("\n" + "=" * 72)
     if hits:
         print("RESULT: %d response(s). If any decoded as protobuf with an" % len(hits))
