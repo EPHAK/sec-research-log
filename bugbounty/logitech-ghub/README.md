@@ -34,7 +34,8 @@ windows/       find-logi-endpoint.ps1, ipc_probe.py  <- run these on Windows
 tools/         extract_protos.py, DumpDepot.java, TraceAuth.java
 analysis/      Ghidra output backing the claims in FEDORA-SESSION-RESULTS.md §2
 ```
-
+cd "D:\research\logitech-handoff\windows"
+powershell -ExecutionPolicy Bypass -File .\find-logi-endpoint.ps1
 ## Closed — do not re-chase
 
 Install-dir ACLs, DLL hijacking, unquoted service paths, unsigned binaries, updater MITM,
