@@ -28,6 +28,19 @@ The script self-tests its own protobuf encoder against a known-good frame before
 the pipe, and aborts loudly if it does not match. (Session 2's script failed silently and
 nearly inverted the conclusion. If this one fails, it says so.)
 
+**It has actually been run**, not just written. PowerShell 7.4.6 was installed on the Fedora
+box and the script was exercised end to end against a mock server that speaks the recovered
+framing (`mock-updater.ps1`, checked in): reply path, drop path, timeout path, no-server
+path, and a deliberately-corrupted self-test that must abort without opening the pipe. Two
+real defects were found and fixed that way — `WindowsIdentity::GetCurrent()` throwing, and
+`PipeStream.ReadTimeout` being unsupported — either of which would have killed the run on
+your box. See `pipe-framing.md` §10.4.
+
+Those tests ran on PowerShell **7** on Linux. Your box may be Windows PowerShell **5.1**.
+The script parses clean and avoids 7-only syntax, but run `-SelfTestOnly` first anyway — it
+exercises the whole encoder on whatever PowerShell you actually have, in seconds, without
+touching the pipe. If the self-test passes there, the encoder is right.
+
 **Interpreting it:**
 
 | Result | Meaning | Next |
