@@ -14,12 +14,13 @@ Read in this order:
 | `WHAT-DO-I-DO-windows.md` | Session 2's instructions for the second Windows run. Executed; superseded. |
 | `windows-session-2-results.md` | Session 3 — identified the real IPC transport (a GUID-named pipe) and closed the TCP 9180 lead. |
 | `WHAT-DO-I-DO-fedora.md` | Session 3's instructions for the second Fedora run. Executed; superseded. |
-| **`pipe-framing.md`** | **Session 4 — current state.** Framing, `content_type` table, the pipe-name literal, and the `llc_check` feature flag. Every claim cites an address. |
-| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. It is one command: `windows\run-session.ps1`. |
+| `pipe-framing.md` | Session 4. Framing, `content_type` table, the pipe-name literal, and the `llc_check` feature flag. Every claim cites an address, and §10 shows how each one was independently re-checked. |
+| **`acl-evidence.md`** | **Session 4.** Real ACL evidence, read directly off the target disk, closing the `llc_check` lead. |
+| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. It is one command: `windows\run-session.ps1`. Now mainly confirmation — the one open question is whether the handshake drops as predicted. |
 
 ## Current status
 
-Two things are settled and one is open.
+Three things are settled and one thing needs one live test to close for good.
 
 **Settled — the handshake test is now one write.** The updater's IPC is a byte-mode named
 pipe with a **`uint32` little-endian length prefix + serialized `Envelope`**;
@@ -35,20 +36,25 @@ is *exact*, not `strstr`: length check then `memcmp` against `"Logitech Inc"` an
 before the check — on failure `asyncAccept` closes the connection without registering it or
 starting a read.
 
-**Open — mode 0 is reachable in shipped builds.** Session 2 flagged "which argument is the
-mode selector" as an unresolved inference, and session 3 let that inference carry the
-conclusion "enforced, no finding". Resolved: the selector is **not a compile-time constant**.
-It is the feature flag **`llc_check`** (default `1`), read at startup from a plain-text file
-`logi_features.cfg` that is searched **upward from the executable's directory, ending at
-`C:\`**. With `llc_check = 0`, `FUN_140c243e0` returns 1 unconditionally and the SYSTEM
-updater accepts every peer on a pipe whose DACL is `Everyone: 0x1FFFFF` by design.
+**Closed by session 4, with real evidence — mode 0's flag is not attacker-settable here.**
+Session 2 flagged "which argument is the mode selector" as an unresolved inference, and
+session 3 let that inference carry the conclusion "enforced, no finding". The selector was
+resolved: it is **not a compile-time constant**, it is the feature flag **`llc_check`**
+(default `1`), read from a plain-text `logi_features.cfg` searched **upward from the
+executable's directory, ending at `C:\`**. That reopened the lead.
 
-Whether that is a *finding* now depends on one thing this box cannot answer: whether an
-unprivileged user can create a file in `C:\Program Files\LGHUB\`, `C:\Program Files\`, or
-`C:\`. On a stock Windows the answer is no — the default `C:\` DACL grants
-`Authenticated Users:(AD)` (create *folders*), not `WD` (create *files*). **Do not report
-this until `icacls` and an actual write attempt from a non-admin shell say otherwise.**
-See `WHAT-DO-I-DO-windows-3.md` §2.
+It is now closed again — this time on evidence read directly off the actual analysed
+machine's disk (`acl-evidence.md`), not on an assumption about "the Windows default":
+`logi_features.cfg` does not exist anywhere in the search path, and **no non-admin trustee
+has `FILE_ADD_FILE` on any of the three search-path directories.** `C:\` grants
+`Authenticated Users` `FILE_ADD_SUBDIRECTORY` only — folders, not files; `Program Files` and
+`Program Files\LGHUB` grant non-admins nothing but read. Every static-analysis-reachable
+route to disabling the accept-time check is closed.
+
+**One thing left, and it needs a live Windows session because it's the one claim ACL reads
+and static analysis cannot settle:** does the pipe actually drop an unsigned peer at the
+default flag value? `run-session.ps1` does that single test. Expected result: `DROPPED`.
+Getting it closes the engagement with a documented negative, not just an assumption.
 
 ## Layout
 
