@@ -166,10 +166,15 @@ if ($Minimal) {
     $frame = [byte[]](New-Frame $envl)
 }
 
-$idn = [Security.Principal.WindowsIdentity]::GetCurrent()
-$prn = New-Object Security.Principal.WindowsPrincipal($idn)
-Write-Host "user         : $($idn.Name)"
-Write-Host "elevated     : $($prn.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+# Context, best-effort. Never let this abort the probe.
+try {
+    $idn = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $prn = New-Object Security.Principal.WindowsPrincipal($idn)
+    Write-Host "user         : $($idn.Name)"
+    Write-Host "elevated     : $($prn.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+} catch {
+    Write-Host "user         : <identity API unavailable: $($_.Exception.Message)>"
+}
 Write-Host "pid          : $PID"
 Write-Host "pipe         : \\.\pipe\$PipeName"
 Write-Host ("content_type : 0x{0:X}" -f $CONTENT_TYPE_HELLO_REQUEST)
@@ -196,16 +201,27 @@ $pipe.Write($frame, 0, $frame.Length)
 $pipe.Flush()
 Write-Host "wrote $($frame.Length) bytes."
 
-$pipe.ReadTimeout = $TimeoutMs
-$hdr  = [byte[]]::new(4)
-$got  = 0
-$eof  = $false
-try {
-    while ($got -lt 4) {
-        $n = $pipe.Read($hdr, $got, 4 - $got)
+# PipeStream does not support ReadTimeout, so bound each read with ReadAsync + Wait.
+function Read-WithTimeout {
+    param([System.IO.Stream]$Stream, [byte[]]$Buffer, [int]$Want, [int]$TimeoutMs)
+    $got = 0; $timedOut = $false; $eof = $false
+    while ($got -lt $Want) {
+        $task = $Stream.ReadAsync($Buffer, $got, $Want - $got)
+        if (-not $task.Wait($TimeoutMs)) { $timedOut = $true; break }
+        $n = $task.Result
         if ($n -le 0) { $eof = $true; break }
         $got += $n
     }
+    return [pscustomobject]@{ Got = $got; TimedOut = $timedOut; Eof = $eof }
+}
+
+$hdr = [byte[]]::new(4)
+$eof = $false
+$got = 0
+try {
+    $r   = Read-WithTimeout -Stream $pipe -Buffer $hdr -Want 4 -TimeoutMs $TimeoutMs
+    $got = $r.Got
+    $eof = $r.Eof
 } catch {
     Write-Host "read ended: $($_.Exception.Message)"
 }
@@ -227,11 +243,8 @@ if ($len -gt 1MB) { Write-Host 'implausible reply length - aborting.' -Foregroun
 $body = [byte[]]::new($len)
 $got = 0
 try {
-    while ($got -lt $len) {
-        $n = $pipe.Read($body, $got, $len - $got)
-        if ($n -le 0) { break }
-        $got += $n
-    }
+    $r = Read-WithTimeout -Stream $pipe -Buffer $body -Want ([int]$len) -TimeoutMs $TimeoutMs
+    $got = $r.Got
 } catch { Write-Host "read ended: $($_.Exception.Message)" }
 
 $show = [Math]::Min($got, 256)
