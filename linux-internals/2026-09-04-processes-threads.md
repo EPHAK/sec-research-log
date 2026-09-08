@@ -21,6 +21,12 @@ instead.
 > **2026-09-08:** added §1.6 (`struct task_struct` — what a process-table
 > entry actually holds). Line numbers in that section are against
 > v7.3.0-rc2 `include/linux/sched.h`.
+>
+> **2026-09-09:** added §1.7 (process creation — `kernel_clone` /
+> `copy_process` / `execve`), §1.8 (termination & reaping), §1.9
+> (hierarchies — groups & sessions). Fills the §2.1.2 / §2.1.3 / §2.1.4
+> gaps. Line numbers against v7.3.0-rc2 (`kernel/fork.c`, `fs/exec.c`,
+> `kernel/exit.c`).
 
 ---
 
@@ -490,6 +496,366 @@ grep -E '^(Name|State|Tgid|Pid|PPid|Uid|Gid|Threads):' /proc/self/status
 themselves yet (next PLAN.md item). `?` — haven't run `pahole` to see how
 big `task_struct` really is under a normal config. `?` — is
 `thread_info`-first an x86 thing or every arch?
+
+## 1.7 Process creation, the actual path (§2.1.2, pp. 88–90)
+
+§2.1.2 lists **four events** that create a process: system initialization, a
+process-creation syscall by a running process, a user request, a batch job.
+Then: *"in UNIX, there is only one system call to create a new process:
+`fork`"* — which *"creates an exact clone of the calling process"* — and the
+child *"usually then executes `execve` or a similar system call."*
+
+§1.1 / §1.2 covered event #1 and the fork→exec *shape* at the boot boundary.
+This is the general path any `fork()` / shell command / `posix_spawn` runs.
+
+**"One system call" — actually four, all landing in one place.**
+`kernel/fork.c`:
+
+```c
+SYSCALL_DEFINE0(fork)                 // fork.c:2847
+SYSCALL_DEFINE0(vfork)                // fork.c:2863   CLONE_VFORK | CLONE_VM
+SYSCALL_DEFINE5(clone, ...)           // fork.c:2876   glibc pthread_create / posix_spawn
+SYSCALL_DEFINE2(clone3, ...)          // fork.c:3048
+```
+
+Each fills a `struct kernel_clone_args` and calls **`kernel_clone()`**
+(`fork.c:2712`). The book's "one system call" is the UNIX *API* promise; the
+kernel has run `clone`/`clone3` underneath for years. `fork` is just `clone`
+with an almost-empty flag set (Exp 4 showed it — `SIGCHLD` plus TID
+housekeeping, nothing shared).
+
+**`kernel_clone()` skeleton** (`fork.c:2712`):
+
+```
+kernel_clone(args)
+  ├─ p = copy_process(NULL, trace, NUMA_NO_NODE, args)   // build the task     fork.c:2766
+  ├─ pid = get_task_pid(p, PIDTYPE_PID);  nr = pid_vnr(pid)
+  ├─ if CLONE_VFORK:  p->vfork_done = &vfork;  init_completion(&vfork)
+  ├─ wake_up_new_task(p)                                 // give it to the sched  fork.c:2797
+  ├─ if CLONE_VFORK:  wait_for_vfork_done(p, &vfork)     // parent sleeps here    fork.c:2804
+  └─ return nr                                           // parent gets child PID
+```
+
+Between `copy_process` and `wake_up_new_task` the task fully exists but has
+never run.
+
+**`copy_process()` — "exact clone" is a column of `copy_*` calls**
+(`fork.c:2012`). The core (`fork.c:2277`–`2316`):
+
+```c
+retval = sched_fork(clone_flags, p);      // 2277  priority etc., not on a runqueue yet
+retval = copy_files(clone_flags, p, ...); // 2295  fd table
+retval = copy_fs(clone_flags, p, ...);    // 2298  cwd / root
+retval = copy_sighand(clone_flags, p);    // 2301  handler table
+retval = copy_signal(clone_flags, p);     // 2304  signal_struct (process-wide signal state)
+retval = copy_mm(clone_flags, p);         // 2307  address space
+retval = copy_namespaces(clone_flags, p); // 2310  nsproxy
+retval = copy_io(clone_flags, p);         // 2313  io context
+retval = copy_thread(p, args);            // 2316  CPU regs + entry point; child will "return 0"
+```
+
+Every one has the same shape: **if the matching `CLONE_*` bit is set, bump a
+refcount and share the pointer; else allocate a fresh copy.** That's §1.6's
+"Linux doesn't inline it all" seen from the creation side. `copy_mm()`
+(`fork.c:1568`) is the clearest:
+
+```c
+if (clone_flags & CLONE_VM) {
+    mmget(oldmm);  mm = oldmm;            // share: a refcount
+} else {
+    mm = dup_mm(tsk, current->mm);        // copy: new mm_struct + dup_mmap()
+}
+```
+
+**Copy-on-write lives here.** Book (p.90): *"the child may share all of the
+parent's memory... copy-on-write... whenever either wants to modify part of
+the memory, that chunk is explicitly copied first."* `dup_mm()`
+(`fork.c:1527`) `memcpy`s the `mm_struct`, then `dup_mmap()` walks every VMA
+and **write-protects the PTEs in parent and child**. The first write faults,
+and the fault handler copies that one page. `fork()` copies *page tables*,
+not memory. `?` — `dup_mmap` / `copy_page_range` are in `mm/`, not read yet
+(that's the Memory Management session).
+
+**Identity + tree linkage** — the block §2.2 quotes (`fork.c:2382`; §2.2's
+`:2381` has drifted by one):
+
+```c
+p->pid = pid_nr(pid);
+if (clone_flags & CLONE_THREAD) { p->group_leader = current->group_leader; p->tgid = current->tgid; }
+else                            { p->group_leader = p;                     p->tgid = p->pid;         }
+```
+
+then under `tasklist_lock` (`fork.c:2455`–`2554`):
+
+```c
+if (clone_flags & (CLONE_PARENT|CLONE_THREAD))  p->real_parent = current->real_parent;  // 2459
+else                                            p->real_parent = current;               // 2466
+...
+list_add_tail(&p->sibling, &p->real_parent->children);  // 2536  parent's child list
+list_add_tail_rcu(&p->tasks, &init_task.tasks);         // 2537  global process list (leaders only)
+attach_pid(p, PIDTYPE_PID);                             // 2551  pidhash / IDR
+```
+
+That last group is the other half of §1.5 — *where* a task gets threaded
+onto `for_each_process`'s list and the PID-lookup structure.
+
+**`vfork` is not a fossil.** `CLONE_VFORK | CLONE_VM`: the child shares the
+parent's address space and the parent is **suspended** until the child
+`execve`s or `_exit`s. It skips `dup_mmap` entirely — `posix_spawn` in glibc
+is built on it.
+
+---
+
+**The exec half** (`fs/exec.c`). `SYSCALL_DEFINE3(execve)` (`exec.c:2012`) →
+`do_execveat_common()` (`exec.c:1877`):
+
+```
+do_execveat_common()                         exec.c:1877
+  ├─ alloc struct linux_binprm  (the "binary parameters" scratchpad)
+  ├─ count + copy argv/envp into the new stack
+  └─ bprm_execve(bprm)                        exec.c:1823
+       ├─ prepare_bprm_creds / check_unsafe_exec     // setuid decisions
+       └─ exec_binprm(bprm)                   exec.c:1774
+            └─ loop, max 5:  search_binary_handler(bprm)   exec.c:1740
+                 └─ list_for_each_entry(fmt, &formats, ...) fmt->load_binary(bprm)
+                      // binfmt_elf, binfmt_script (#!), binfmt_misc, ...
+```
+
+`search_binary_handler()` walks the registered format handlers.
+`binfmt_script` handles `#!` — it rewrites `bprm->file` to the interpreter
+and the loop runs again (hence the `depth > 5` → `-ELOOP` cap at
+`exec.c:1788`: a `#!` pointing at a `#!` pointing at...). `binfmt_elf`
+handles ELF.
+
+**Point of no return: `begin_new_exec()`** (`exec.c:1124`), which the ELF
+loader calls back into. After `bprm->point_of_no_return = true`
+(`exec.c:1149`) a failure kills the process with SIGSEGV instead of
+returning an error — the old program is already gone. It runs:
+
+- `de_thread(me)` (`exec.c:1152`) — **kill every other thread in the group.**
+  `execve` from a multithreaded process leaves exactly one task, now the
+  group leader. (Ties to §2.2: exec collapses the thread group.)
+- `unshare_files()` — private fd table.
+- `set_mm_exe_file()` (`exec.c:1172`) — `/proc/self/exe` now points at the
+  new binary.
+- `exec_mmap()` (`exec.c:1185`, fn at `:843`) — **swap in a new `mm_struct`,
+  drop the old one.** The address space from `fork` is discarded right here.
+- `unshare_sighand()` (`exec.c:1206`) — private handler table; handlers reset
+  to default (SIG_IGN survives).
+- later `setup_new_exec()` (`exec.c:1361`) — commit the new `cred` (setuid
+  takes effect here), new stack, `PF_RANDOMIZE` for ASLR.
+
+`fork` gives the child copies of everything; `execve` throws most of them
+away and installs fresh ones. The gap between the two is where the shell
+does `dup2()` for redirection (book, p.90).
+
+**Check it:**
+
+```
+strace -f -e trace=clone,clone3,execve,execveat -qq /bin/true   # one clone, one execve
+bash -c 'echo shell=$$; exec sleep 60' &   # "exec" -> the sleep keeps the shell's PID
+pmap $! | tail -1                            # its address space is sleep's, not bash's
+```
+
+`?` — haven't opened `binfmt_elf.c` / `load_elf_binary` (how segments get
+mapped, `PT_INTERP` / `ld.so`, the initial stack with `auxv`). `?` —
+`copy_thread` is arch code (`arch/x86/kernel/process.c`) — how the child is
+rigged to "return 0" not traced yet.
+
+## 1.8 Process termination & reaping (§2.1.3, pp. 90–91)
+
+§2.1.3 gives **four ways** a process ends: normal exit (voluntary), error
+exit (voluntary), fatal error — bad instruction, bad memory, divide-by-zero
+(involuntary), killed by another process (involuntary). The first two are
+`exit()`; the last two arrive as **signals**. All funnel into one place.
+
+**libc `exit(3)` ≠ `SYSCALL_DEFINE1(exit)`.** C's `exit(3)` runs atexit
+handlers then calls `_exit(2)` = `exit_group(2)`, ending the **whole thread
+group**. The bare `exit(2)` syscall ends **one thread**. `kernel/exit.c`:
+
+```c
+SYSCALL_DEFINE1(exit, int, error_code)        // exit.c:1116  -> do_exit()        one task
+SYSCALL_DEFINE1(exit_group, int, error_code)  // exit.c:1160  -> do_group_exit()  the process
+```
+
+`do_group_exit()` (`exit.c:1126`) sets `signal->group_exit_code`, flags
+`SIGNAL_GROUP_EXIT`, calls `zap_other_threads()` (`exit.c:1146`) to send
+every sibling a fatal signal, then `do_exit()`. A fatal signal (SIGSEGV,
+SIGKILL, uncaught SIGTERM) reaches the same `do_group_exit()` from the
+signal-delivery path — that's the book's "fatal error" and "killed by
+another process".
+
+**`do_exit()` — the teardown, in order** (`exit.c:928`):
+
+```c
+exit_signals(tsk);            // 950   sets PF_EXITING
+tsk->exit_code = code;        // 977
+exit_mm();                    // 996   drop the address space (mmput; free if last user)
+exit_sem(tsk); exit_shm(tsk); // 1001  detach SysV IPC
+exit_files(tsk);              // 1003  close the fd table
+exit_fs(tsk);                 // 1004  drop cwd / root
+exit_thread(tsk);             // 1009  arch cleanup
+exit_notify(tsk, group_dead); // 1020  reparent children, tell the parent, become a zombie
+do_task_dead();               // 1051  __state = TASK_DEAD; final schedule() — never returns
+```
+
+**The exit code is packed.** `SYSCALL_DEFINE1(exit)` does
+`do_exit((error_code & 0xff) << 8)` — your low byte becomes bits 8–15 of
+what `wait()` reports; a killing signal goes in the low 7 bits. That's what
+`WEXITSTATUS` / `WTERMSIG` unpack.
+
+**`exit_notify()` — zombie + reparenting** (`exit.c:770`):
+
+```c
+forget_original_parent(tsk, &dead);              // 777  hand my children to a new reaper
+tsk->exit_state = EXIT_ZOMBIE;                    // 782  book's "finished, not yet collected"
+autoreap = ... do_notify_parent(tsk, tsk->exit_signal);   // 787  SIGCHLD to the parent
+if (autoreap) tsk->exit_state = EXIT_DEAD;        // 798  parent ignores SIGCHLD -> skip zombie
+```
+
+A task becomes `EXIT_ZOMBIE` (the number 32 from §1.4) the moment teardown
+finishes. It holds nothing but its `task_struct` and exit status — `mm`,
+files, fds already gone — until the parent `wait()`s.
+
+**Reparenting — where orphans go** (`find_new_reaper()`, `exit.c:669`):
+
+1. another live thread in the *same* group, if any;
+2. else the nearest ancestor marked **child-subreaper**
+   (`prctl(PR_SET_CHILD_SUBREAPER)` — how `systemd --user`, `tini`,
+   container inits keep their descendants);
+3. else the pid namespace's `child_reaper` — **PID 1**.
+
+This is the book's *"processes in UNIX cannot disinherit their children"*
+(p.92) made precise: the walk always terminates at PID 1, and PID 1 is
+`SIGNAL_UNKILLABLE` (`fork.c:2523`) partly so it's always there to reap.
+
+**`wait4()` — collection.** `SYSCALL_DEFINE4(wait4)` (`exit.c:1938`) →
+`kernel_wait4` → `do_wait()` (`exit.c:1743`) → per matching child,
+`wait_task_zombie()` (`exit.c:1206`):
+
+```c
+if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, EXIT_DEAD) != EXIT_ZOMBIE)  // 1232  atomically claim it
+    return 0;                                                        // another waiter won
+wo->wo_stat = status;                                                // packed code back to caller
+release_task(p);                                                     // 1313  task_struct freed
+```
+
+`release_task()` (`exit.c:248`) unhooks it from the pidhash, sibling list
+and thread list; `__exit_signal` folds its CPU-time counters into the
+parent's `signal_struct` — that's Fig. 2-4's *"Children's CPU time"* — and
+drops the last ref.
+
+```
+   running ──do_exit()──► EXIT_ZOMBIE ──parent wait()s──► EXIT_DEAD ──release_task()──► gone
+                              │
+                    SIGCHLD sent to parent here; if the parent ignores
+                    SIGCHLD / set SA_NOCLDWAIT, autoreap skips to EXIT_DEAD
+```
+
+**Check it:**
+
+```
+perl -e 'fork or exit 0; sleep 30' & sleep 1
+ps -eo pid,ppid,stat,comm | awk '$3 ~ /Z/'                # STAT has Z, comm <defunct>
+Z=$(ps -eo pid,stat --no-headers | awk '$2~/Z/{print $1; exit}')
+grep -E 'State|VmRSS|Threads' /proc/$Z/status             # State Z; no VmRSS (mm gone)
+strace -f -e trace=wait4,waitid -p "$(pgrep -n bash)"     # then run a command in that shell
+```
+
+`?` — the `get_signal()` path (`kernel/signal.c`) that turns a SIGSEGV into
+`do_group_exit` not read yet (Q4 touched only the wake side). `?` —
+`do_task_dead()` and how a `TASK_DEAD` task's stack is reclaimed (RCU /
+`delayed_put_task_struct`).
+
+## 1.9 Process hierarchies: parents, groups, sessions (§2.1.4, pp. 91–92)
+
+§2.1.4: a process *"has only one parent (but zero, one, two, or more
+children)"*, descendants form a tree, and *"a process and all of its
+children and further descendants together form a process group"* — Ctrl-C
+hits the whole group. UNIX's tree is single-rooted at `init`; Windows *"has
+no concept of a process hierarchy."*
+
+**Two parents, not one** (`sched.h:1094`, `:1097`):
+
+- `real_parent` — who actually forked me.
+- `parent` — who gets `SIGCHLD` and `wait()`s for me. Normally the same.
+
+They diverge under **ptrace**: `strace` / `gdb` becomes `parent` while
+`real_parent` stays the shell. The `ptrace_reparented()` checks all over
+`exit.c` are handling exactly this. (Fig. 2-4's one "Parent process" row =
+two pointers.)
+
+**The tree is two lists per node** (`sched.h:1102`–`1103`):
+
+```c
+struct list_head children;   // head of MY list of kids
+struct list_head sibling;    // MY link in my parent's children list
+
+list_for_each_entry(child, &current->children, sibling) { ... }
+```
+
+The global "every process" list is *separate* — `tasks`, head at
+`init_task`, walked by `for_each_process()` (`include/linux/sched/signal.h:640`,
+still the line §1.5 cites). It holds one entry per **thread-group leader**;
+non-leader threads hang off `signal->thread_head`. Tree ≠ flat list —
+different links in the same struct.
+
+**Groups and sessions are just two more PID types.** `enum pid_type`
+(`include/linux/pid_types.h`):
+
+```c
+PIDTYPE_PID,   PIDTYPE_TGID,   PIDTYPE_PGID,   PIDTYPE_SID
+```
+
+A task sits on up to four PID hash lists at once (`pid_links[PIDTYPE_MAX]`,
+`sched.h:1117`). `PIDTYPE_PGID` = process group, `PIDTYPE_SID` = session;
+the leader pids are cached in the shared `signal_struct`
+(`task_pgrp()` / `task_session()` = `task->signal->pids[...]`,
+`sched/signal.h:690`).
+
+- `setpgid(2)` (`kernel/sys.c:1114`) — move a task into a process group.
+- `setsid(2)` (`kernel/sys.c:1303`) — new session, become leader, drop the
+  controlling terminal. Step one of **becoming a daemon** (the book's
+  "daemons" from §2.1.2).
+
+At fork the child **inherits** parent's group and session (`copy_process`,
+`fork.c:2515`–`2516`). So "everything started in this window" shares a pgrp
+by default — which is why one Ctrl-C hits all of it: the tty driver sends
+SIGINT to the **foreground process group**, not to a single process.
+
+```
+   session  (SID = PID of the shell that ran setsid; owns the controlling tty)
+   ├── process group A   "vim"              ← foreground: gets Ctrl-C
+   │     └── vim
+   └── process group B   "sort | uniq -c"   ← background
+         ├── sort
+         └── uniq
+```
+
+**Orphaned process groups.** `exit_notify` → `kill_orphaned_pgrp()`
+(`exit.c:780`): when a group becomes orphaned (no member has a parent in a
+different group in the same session) and holds a stopped process, the kernel
+sends the whole group `SIGHUP` + `SIGCONT`. That's "closing the terminal
+kills the background jobs" — and what `nohup` / `disown` / `setsid` dodge.
+
+**vs Windows:** §1.1's "two roots" is the Linux nuance — the userspace tree
+is single-rooted at PID 1 as the book says, but PID 2 (`kthreadd`) roots a
+second tree of kernel threads that belongs to no session or process group
+at all.
+
+**Check it:**
+
+```
+ps -eo pid,ppid,pgid,sid,tpgid,stat,comm        # pgid + sid = the two PID types
+ps -o pid,pgid,sid,comm --forest
+setsid sleep 300 & ps -o pid,ppid,pgid,sid,comm -p $!   # sid==pid, ppid->1 : a daemon
+sleep 100 | sleep 100 &   # then: fg, Ctrl-C -> SIGINT to the whole foreground pgrp
+grep -E 'NSpid|NStgid' /proc/self/status        # namespace-local ids (the vnr from §1.3)
+```
+
+`?` — `PIDTYPE_TGID` vs `PIDTYPE_PID` (both a "process" identity) — haven't
+read `kernel/pid.c` for why TGID needed its own hash. `?` — job-control
+stop/cont (`SIGTSTP`, `__TASK_STOPPED` from §1.4) not traced.
 
 ---
 
