@@ -94,3 +94,31 @@ python3 handoff/sd_decode.py ""
 python3 handoff/sd_decode.py ""
 python3 handoff/sd_decode.py ""
 ```
+
+---
+
+## Addendum — the `FeatureCanary` loose end is closed too
+
+`pipe-framing.md` §10.5 flagged one gap: `GetFeatureFlag`'s map was traced to one populate
+path, but the binary also has a `FeatureCanary` subsystem with its own `get_flag`, and it was
+not proven that FeatureCanary never writes into the same map.
+
+Checked. It doesn't.
+
+- `FeatureCanary::get_flag` (`FUN_140124460`) reads from `this` (a `FeatureCanary` instance)
+  via `FUN_1401236b0(this, out, componentKey, group)` — a per-component lookup keyed by
+  strings called "Component key" / group, populated by `FeatureCanary::_parse_settings` from
+  downloaded JSON (`feature_canary.cpp`). Completely separate object, separate data structure,
+  separate key space from `logi::util::feature_decisions`.
+- Every reference to the `feature_decisions` singleton pointer (`DAT_14131d178` /
+  `DAT_14131d180`) was enumerated. Exactly one site **writes** it with real data —
+  `FUN_14002a8a0`, the constructor that loads `logi_features.cfg` once at startup (§6.3 of
+  `pipe-framing.md`). The only other writer, `FUN_140029fa0`, is the teardown path: it
+  releases the singleton and nulls both pointers — a shutdown decrement, not a populate.
+  Every other reference is a read (`GetFeatureFlag` itself, and two unrelated flag lookups at
+  `140e07af0` / `140e07b90` for a different flag name).
+
+**`FeatureCanary` cannot set `llc_check`.** The only way to influence it is
+`logi_features.cfg`, and §1–2 above establish that no non-admin can write that file on this
+machine, and it doesn't currently exist. This was the last open static-analysis question in
+the engagement.
