@@ -36,6 +36,9 @@ analysis/      Ghidra output backing the claims in FEDORA-SESSION-RESULTS.md §2
 ```
 cd "D:\research\logitech-handoff\windows"
 powershell -ExecutionPolicy Bypass -File .\find-logi-endpoint.ps1
+What to send back
+
+The contents of %USERPROFILE%\Desktop\logi-endpoint\ — pipes_logi.txt, listeners.txt, port9180.txt.
 ## Closed — do not re-chase
 
 Install-dir ACLs, DLL hijacking, unquoted service paths, unsigned binaries, updater MITM,
