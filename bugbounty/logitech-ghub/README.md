@@ -10,68 +10,97 @@ Read in this order:
 | `windows-pending-testing.md` | Session 0 — static analysis of the installer, on Linux. |
 | `WHAT-DO-I-DO.md` | Session 0's instructions for the first Windows run. |
 | `windows-session-1-results.md` | Session 1 — Windows recon. Killed the privesc-by-ACL thesis; found the Overwolf 45654 origin issue. |
-| `FEDORA-SESSION-RESULTS.md` | Session 2 — recovered the SYSTEM updater's full IPC protocol and found the accept-time security check. **Its §2 lead is now closed — read session 3 before acting on it.** |
+| `FEDORA-SESSION-RESULTS.md` | Session 2 — recovered the SYSTEM updater's IPC protocol and the accept-time security check. Its §2 lead was closed by session 3; its §2 *caveat 1* was resolved by session 4, and the resolution reopened a related lead. |
 | `WHAT-DO-I-DO-windows.md` | Session 2's instructions for the second Windows run. Executed; superseded. |
-| **`windows-session-2-results.md`** | **Session 3 — current state.** Identified the updater's real IPC transport and closed the §2 lead. |
-| **`WHAT-DO-I-DO-fedora.md`** | **Do this next**, on Fedora. Static analysis only. |
+| `windows-session-2-results.md` | Session 3 — identified the real IPC transport (a GUID-named pipe) and closed the TCP 9180 lead. |
+| `WHAT-DO-I-DO-fedora.md` | Session 3's instructions for the second Fedora run. Executed; superseded. |
+| **`pipe-framing.md`** | **Session 4 — current state.** Framing, `content_type` table, the pipe-name literal, and the `llc_check` feature flag. Every claim cites an address. |
+| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. One handshake test, then three `icacls` commands. |
 
 ## Current status
 
-**The §2 lead is closed. No finding.**
+Two things are settled and one is open.
 
-`lghub_updater.exe` (SYSTEM) **does** own a named pipe — `\\.\pipe\<GUID>`, e.g.
-`a62ed1c1-e1a9-5495-9038-16bd49ec7341`. Session 2 concluded no Logitech pipe existed and inferred
-that the IPC therefore ran over TCP 9180, hitting the unconditional-allow branch of
-`FUN_140c243e0`. That was a false negative: the pipe name is a bare GUID, so a name grep misses it.
-Because a pipe transport is in use, the **enforced** branch applies — the peer's real PID is
-resolved from the kernel, pinned against PID reuse, and signature-verified against `Logitech Inc`.
+**Settled — the handshake test is now one write.** The updater's IPC is a byte-mode named
+pipe with a **`uint32` little-endian length prefix + serialized `Envelope`**;
+`HelloRequest.content_type` is **`0x1100001`**; `SupportedProtocols` is **`[1]`**; and the
+pipe name is a **hardcoded string literal** — `a62ed1c1-e1a9-5495-9038-16bd49ec7341`, the
+same on every machine running this build, not derived and not per-install. The blind 0–64
+sweep is unnecessary. `windows/hello-probe.ps1` sends the frame and self-tests its own
+encoder first.
 
-Independently confirmed: **TCP 9180 is not the IPC.** It returned a byte-identical `HTTP/1.0 404`
-to plain GETs *and* to six WebSocket upgrades across four paths and both recovered subprotocols.
-A websocketpp endpoint answers `400`/`426` to an upgrade it rejects; a constant 404 with no
-path- or header-dependent variation means no route matched and no upgrade handler was consulted.
+**Settled — the signature check is not bypassable on its own terms.** The publisher compare
+is *exact*, not `strstr`: length check then `memcmp` against `"Logitech Inc"` and
+`"Logitech Inc."`. `WinVerifyTrust` runs first and short-circuits. Nothing is reachable
+before the check — on failure `asyncAccept` closes the connection without registering it or
+starting a read.
 
-**What survives:** a low-priv, unsigned process **can open** the updater's pipe — the DACL admits
-ordinary users, so the entire defence is the post-accept signature check. One experiment remains:
-send a `HelloRequest` over that pipe and see whether the connection is dropped. Static analysis
-says it will be. That test has **not** been run; question 6 of the gate (working PoC) is still
-unmet, and no report should be written until it returns a positive result.
+**Open — mode 0 is reachable in shipped builds.** Session 2 flagged "which argument is the
+mode selector" as an unresolved inference, and session 3 let that inference carry the
+conclusion "enforced, no finding". Resolved: the selector is **not a compile-time constant**.
+It is the feature flag **`llc_check`** (default `1`), read at startup from a plain-text file
+`logi_features.cfg` that is searched **upward from the executable's directory, ending at
+`C:\`**. With `llc_check = 0`, `FUN_140c243e0` returns 1 unconditionally and the SYSTEM
+updater accepts every peer on a pipe whose DACL is `Everyone: 0x1FFFFF` by design.
 
-`WHAT-DO-I-DO-fedora.md` is the next step — it recovers the pipe framing and `content_type` so
-that test is a single write rather than a blind sweep.
+Whether that is a *finding* now depends on one thing this box cannot answer: whether an
+unprivileged user can create a file in `C:\Program Files\LGHUB\`, `C:\Program Files\`, or
+`C:\`. On a stock Windows the answer is no — the default `C:\` DACL grants
+`Authenticated Users:(AD)` (create *folders*), not `WD` (create *files*). **Do not report
+this until `icacls` and an actual write attempt from a non-admin shell say otherwise.**
+See `WHAT-DO-I-DO-windows-3.md` §2.
 
 ## Layout
 
 ```
-protos/                    69 .proto files reconstructed from lghub_updater.exe  <- the IPC protocol
+pipe-framing.md            session 4's deliverable: framing, content types, llc_check
+protos/                    69 .proto files reconstructed from lghub_updater.exe
 protos_agent/              same, recovered from lghub_agent.exe
-windows/                   find-logi-endpoint.ps1 (v2), ipc_probe.py  <- run these on Windows
-tools/                     extract_protos.py, DumpDepot.java, TraceAuth.java
-analysis/                  Ghidra output backing the claims in FEDORA-SESSION-RESULTS.md §2
+windows/                   hello-probe.ps1  <- run this; find-logi-endpoint.ps1; ipc_probe.py
+tools/                     build_hello.py (generates the envelope), extract_protos.py,
+                           Query.java + Wrappers.java (the Ghidra headless scripts used),
+                           DumpDepot.java, TraceAuth.java
+analysis/                  Ghidra output backing FEDORA-SESSION-RESULTS.md §2
 evidence/windows-session-2/ raw output backing windows-session-2-results.md
 ```
 
 ## Tooling notes
 
-- `windows/find-logi-endpoint.ps1` **v1 was broken** — it printed an empty section 1 on every
-  machine and would have led to the opposite (wrong) conclusion. Four defects, all fixed in v2;
-  see `windows-session-2-results.md` §5. The failure was silent, which is how the dead lead
-  survived a session.
-- `windows/ipc_probe.py` has never been run — `python` on the Windows box is the Microsoft Store
-  alias stub, not a real interpreter. Its WebSocket half is superseded by the PowerShell probes in
-  v2 of the endpoint script; its raw-framing half is moot now that 9180 is not the IPC.
+- `windows/hello-probe.ps1` **self-tests its protobuf encoder against a known-good frame and
+  aborts if it does not match.** This is deliberate: `find-logi-endpoint.ps1` v1 failed
+  silently and would have produced the opposite conclusion, and that near-miss cost a session.
+- `windows/find-logi-endpoint.ps1` v1 was broken — four defects, all fixed in v2; see
+  `windows-session-2-results.md` §5.
+- `windows/ipc_probe.py` has never been run and is now superseded — `python` on the Windows
+  box is the Microsoft Store alias stub, and its framing guesses are moot now that the
+  framing is known.
+- `tools/Query.java` / `tools/Wrappers.java` drive Ghidra headless against the existing
+  project. Env-var driven: `GH_DEC`, `GH_XREF`, `GH_REFTO`, `GH_STR`, `GH_SYM`, `GH_DIS`,
+  `GH_RANGE`, `GH_VTABLE`, `GH_OUTFILE`. `GH_RANGE` decompiles a whole address range, which
+  is how the `logi::ipc` and `logi::local_connection` modules were mapped.
 
 ## Closed — do not re-chase
 
-Install-dir ACLs, DLL hijacking, unquoted service paths, unsigned binaries, updater MITM,
-`ProgramData\LGHUB` write access, and the depot path-traversal check (correctly implemented).
-The Overwolf 45654 origin issue is downgraded — React escapes the injected data and the affected
-UI only renders when Overwolf is actually installed.
+Install-dir ACLs *as a DLL-hijack / binary-replacement path*, DLL hijacking, unquoted service
+paths, unsigned binaries, updater MITM, `ProgramData\LGHUB` write access, and the depot
+path-traversal check (correctly implemented). The Overwolf 45654 origin issue is downgraded —
+React escapes the injected data and the affected UI only renders when Overwolf is installed.
 
 Added by session 3:
 
-- **TCP 9180 and the "transport-dependent security check" thesis.** Closed. 9180 is a routeless
-  stub listener.
-- **"No Logitech named pipe exists."** That was a false negative. Three exist — two owned by
-  `lghub_agent`, one by `lghub_updater`. Never conclude "no pipe" from a name grep; enumerate
-  `\\.\pipe\` and resolve owners with `GetNamedPipeServerProcessId`.
+- **TCP 9180 and the "transport-dependent security check" thesis.** Closed.
+- **"No Logitech named pipe exists."** A false negative. Never conclude "no pipe" from a name
+  grep; enumerate `\\.\pipe\` and resolve owners with `GetNamedPipeServerProcessId`.
+
+Added by session 4:
+
+- **What 9180 actually is.** `logi::api::http_server(9180, 9189)` — the HTTP half of
+  `logi::pipeline::api_server<named_pipes::Server, http_server>`, with no routes registered in
+  this binary, which is why every path and every WebSocket upgrade gets a byte-identical 404.
+  Not crashpad (that pipe is `\\.\pipe\crashpad_%lu_`, a separate wrapper), not Sentry, not
+  dead code. **Do not re-probe it.**
+- **Substring publisher compare.** Closed — the compare is exact against two literals.
+- **"A PoC must enumerate the pipe and resolve owners, never hard-code the GUID"** (session 3
+  §1). Wrong. The GUID is a literal in `.rdata`; hard-coding it is correct.
+- **`CreateNamedPipeW`-only searches.** The IPC pipe is created through **`CreateNamedPipeA`**.
+  Search both.
