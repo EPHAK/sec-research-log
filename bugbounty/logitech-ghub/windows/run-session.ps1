@@ -137,12 +137,24 @@ else {
         } else {
             Say ''
             Say '  running the real handshake...'
-            $out = & $probe -PipeName $PipeName 2>&1
+            # Session 5: this was  2>&1  and the classification below could NEVER fire.
+            # hello-probe.ps1 reports through Write-Host, which goes to the information
+            # stream (6), not stdout - so $out only ever held stray error records and the
+            # VERDICT block printed "(nothing recorded)" after a perfectly conclusive run.
+            # *>&1 merges every stream, so the -match tests below see the real report.
+            $out = & $probe -PipeName $PipeName *>&1
             $out | ForEach-Object { Say "    $_" }
+            $out = ($out | ForEach-Object { $_.ToString() }) -join "`n"
             if ($out -match 'REPLIED TO AN UNSIGNED') {
                 $script:Findings.Add('*** SYSTEM updater COMPLETED A HANDSHAKE with an unsigned non-elevated peer ***')
             } elseif ($out -match 'DROPPED') {
                 $script:Findings.Add('Handshake DROPPED - accept-time signature check is enforced (expected)')
+            } elseif ($out -match 'Pipe is broken|Pipe has been ended|IOException') {
+                # Session 5: the server can tear the connection down between our connect()
+                # and our write(), so the probe dies inside Write and never reaches its own
+                # DROPPED branch. That is still a drop, and a stronger one. Classify it, or
+                # the VERDICT block prints "(nothing recorded)" after a conclusive run.
+                $script:Findings.Add('Handshake DROPPED at accept time - server closed the pipe before we could write (expected, strongest form)')
             } elseif ($out -match 'CONNECT FAILED') {
                 $script:Findings.Add('Could not connect to the pipe - DACL may be the boundary after all')
             }
@@ -178,7 +190,12 @@ Say ''
 foreach ($d in $SearchDirs) {
     Step "icacls $d" {
         Say "---- icacls `"$d`" ----" 'White'
-        $r = & icacls $d 2>&1 | Out-String -Stream
+        # Session 5: PowerShell wraps a native argument in quotes, and a trailing backslash
+        # then escapes the closing quote - icacls received  C:\Program Files\LGHUB"  and
+        # failed on the two directories that matter most. Trim it (keeping C:\ a root).
+        $dArg = $d.TrimEnd('\')
+        if ($dArg -match '^[A-Za-z]:$') { $dArg = $dArg + '\' }
+        $r = & icacls $dArg 2>&1 | Out-String -Stream
         $r | ForEach-Object { Say "  $_" }
         try { $r | Out-File -FilePath (Join-Path $OutDir ('icacls_' + ($d -replace '[:\\ ]','_') + '.txt')) -Encoding UTF8 } catch {}
     }

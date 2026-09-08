@@ -16,11 +16,33 @@ Read in this order:
 | `WHAT-DO-I-DO-fedora.md` | Session 3's instructions for the second Fedora run. Executed; superseded. |
 | `pipe-framing.md` | Session 4. Framing, `content_type` table, the pipe-name literal, and the `llc_check` feature flag. Every claim cites an address, and §10 shows how each one was independently re-checked. |
 | **`acl-evidence.md`** | **Session 4.** Real ACL evidence, read directly off the target disk, closing the `llc_check` lead. |
-| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. It is one command: `windows\run-session.ps1`. Now mainly confirmation — the one open question is whether the handshake drops as predicted. |
+| `WHAT-DO-I-DO-windows-3.md` | Session 4's instructions for the third Windows run. Executed; superseded. |
+| **`windows-session-3-results.md`** | **Session 5 — the live handshake test. The last open question, answered. ENGAGEMENT CLOSED, no finding.** |
 
 ## Current status
 
-Three things are settled and one thing needs one live test to close for good — every route this box can check without a live process is now closed, including the `FeatureCanary` loose end (`acl-evidence.md` addendum).
+**CLOSED — no vulnerability, no report.** Session 5 ran the live test on the target
+(non-elevated, PowerShell 5.1, G HUB `2026.5.939708`) and got the predicted result:
+**the SYSTEM updater's pipe drops an unsigned, non-elevated peer at the default flag value.**
+
+It drops harder than predicted. Connecting and then reading *without sending anything* gets
+clean EOF after 0 bytes, 3/3 runs within ~16ms — **the server closes the connection itself
+before the client writes a byte**, exactly as `asyncAccept` says it should. The peer is
+refused on inspection; the `HelloRequest` is never read. Details and the trial that
+distinguishes this from a race: `windows-session-3-results.md` §3.
+
+The `llc_check` route is confirmed closed from the live system too: the file exists nowhere
+in the search path, and an actual non-admin file-creation attempt is denied in all three
+directories plus `C:\ProgramData\LGHUB`. `C:\` allows folder-create only — the stock Windows
+default, and not a file-write primitive.
+
+Session 5 also found and fixed **four defects in the session scripts**, three of which would
+have voided or inverted the result — including an unguarded `$pipe.Write()` that turned the
+expected outcome into an uncaught terminating error, discarding a correct finding as a crash.
+The recurring root cause, worth remembering: **on PowerShell 5.1 `Write-Host` goes to the
+information stream, so `2>&1` captures none of it.**
+
+Everything below is retained as the record of how each route was closed.
 
 **Settled — the handshake test is now one write.** The updater's IPC is a byte-mode named
 pipe with a **`uint32` little-endian length prefix + serialized `Envelope`**;
@@ -51,10 +73,14 @@ has `FILE_ADD_FILE` on any of the three search-path directories.** `C:\` grants
 `Program Files\LGHUB` grant non-admins nothing but read. Every static-analysis-reachable
 route to disabling the accept-time check is closed.
 
-**One thing left, and it needs a live Windows session because it's the one claim ACL reads
-and static analysis cannot settle:** does the pipe actually drop an unsigned peer at the
-default flag value? `run-session.ps1` does that single test. Expected result: `DROPPED`.
-Getting it closes the engagement with a documented negative, not just an assumption.
+**Confirmed live by session 5**, from the running system as the unprivileged user, by
+actually attempting the file creation rather than reading the ACL: denied in all three
+directories, and in `C:\ProgramData\LGHUB` as well.
+
+**The last open item — answered by session 5.** Does the pipe actually drop an unsigned peer
+at the default flag value? **Yes**, deterministically, and before the client can send a byte.
+`windows-session-3-results.md` has the run. The engagement closes with a documented negative
+rather than an assumption, which was the point.
 
 ## Layout
 
@@ -65,6 +91,8 @@ protos/                    69 .proto files reconstructed from lghub_updater.exe
 protos_agent/              same, recovered from lghub_agent.exe
 windows/  run-session.ps1     <- RUN THIS. the whole Windows session, one command
           hello-probe.ps1     the handshake test on its own (run-session.ps1 calls it)
+          characterise-drop.ps1  session 5: separates "server closed us at accept time"
+                              from "we raced the write" - the test that settled it
           find-logi-endpoint.ps1, ipc_probe.py   superseded, kept for the record
 tools/    build_hello.py      generates the envelope (source of the known-good hex)
           mock-updater.ps1    fake updater speaking the recovered framing, for testing
@@ -75,6 +103,8 @@ tools/    build_hello.py      generates the envelope (source of the known-good h
           extract_protos.py, DumpDepot.java, TraceAuth.java
 analysis/                  Ghidra output backing FEDORA-SESSION-RESULTS.md §2
 evidence/windows-session-2/ raw output backing windows-session-2-results.md
+evidence/windows-session-3/ raw output backing windows-session-3-results.md - the full
+                           session transcript and the drop characterisation
 ```
 
 ## Tooling notes

@@ -197,9 +197,31 @@ try {
 }
 Write-Host 'connected.' -ForegroundColor Green
 
-$pipe.Write($frame, 0, $frame.Length)
-$pipe.Flush()
-Write-Host "wrote $($frame.Length) bytes."
+# Session 5: this was an unguarded Write. With $ErrorActionPreference='Stop' a broken pipe
+# here is a TERMINATING error - the script died before printing any verdict, the exception
+# escaped the caller's redirect, and run-session.ps1's VERDICT read "(nothing recorded)"
+# after a conclusive run. The server rejecting us at accept time IS the expected outcome,
+# so it has to be reported, not thrown.
+#
+# Measured on the target (5x connect+write, 3x connect and read without writing): the
+# server closes the connection itself, returning EOF with 0 bytes, before we send anything.
+# Whether our Write lands in the local pipe buffer first is a race, so both paths below
+# mean the same thing.
+try {
+    $pipe.Write($frame, 0, $frame.Length)
+    $pipe.Flush()
+    Write-Host "wrote $($frame.Length) bytes."
+} catch {
+    Write-Host ''
+    Write-Host 'RESULT: DROPPED - the server closed the pipe before it would accept our bytes.' -ForegroundColor Yellow
+    Write-Host "  ($($_.Exception.InnerException.Message))"
+    Write-Host 'This is the accept-time rejection in its strongest form: the connection was torn'
+    Write-Host 'down between connect() and write(), i.e. the peer was refused on inspection, not'
+    Write-Host 'on the content of the handshake. The signature check is ENFORCED.'
+    Write-Host 'Write it up as "no finding" for the pipe handshake.'
+    try { $pipe.Dispose() } catch { }
+    exit 0
+}
 
 # PipeStream does not support ReadTimeout, so bound each read with ReadAsync + Wait.
 function Read-WithTimeout {

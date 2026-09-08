@@ -1,0 +1,823 @@
+﻿logi-session4  2026-09-08 20:57:45
+output dir: C:\Users\swaga\OneDrive\Desktop\logi-session4
+
+==============================================================================
+A. CONTEXT
+==============================================================================
+user       : EPHAK\swaga
+elevated   : False
+powershell : 5.1.26100.9278 (Desktop)
+os         : Microsoft Windows 11 Home Single Language 10.0.26200.0
+  lghub_agent.exe 2026.5.939708
+  lghub_gl.exe 2.4.17.922017
+  lghub_gl_crashpad_handler.exe 0.1.8+853567, Sentry v0.9.1
+  lghub_software_manager.exe 2026.5.9708
+  lghub_sso_handler.exe 2026.5.939708
+  lghub_updater.exe 2026.5.939708
+  (scope is LATEST version only - confirm this is current before submitting anything)
+  pid 16436    lghub_agent
+  pid 15944    lghub_system_tray
+  pid 6260     lghub_updater
+  pid 6168     logi_lamparray_service.AMD64
+
+==============================================================================
+B. THE UPDATER PIPE
+==============================================================================
+expected name (hardcoded literal in lghub_updater.exe and lghub_agent.exe):
+  \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  161 named pipes visible
+  FOUND: \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  opened it from this non-elevated process -> the DACL admits us
+  (matches the Everyone:0x1FFFFF descriptor read out of the binary)
+
+==============================================================================
+C. THE HANDSHAKE TEST
+==============================================================================
+  running hello-probe.ps1 -SelfTestOnly first (validates the encoder on THIS PowerShell)...
+
+  running the real handshake...
+    
+
+==============================================================================
+D. logi_features.cfg - DOES IT ALREADY EXIST?
+==============================================================================
+Search path (resolved by walking UP from the exe directory; first match wins):
+  absent : C:\Program Files\LGHUB\logi_features.cfg
+  absent : C:\Program Files\logi_features.cfg
+  absent : C:\logi_features.cfg
+
+Reminder - the line that disables the check is exactly:   llc_check = 0
+accepted values: 0|1|false|true|off|on|yes|no   (key must be lowercase a-z0-9 . _ and spaces)
+
+==============================================================================
+E. ACLs ON THE SEARCH PATH
+==============================================================================
+What matters: does Users / Authenticated Users / INTERACTIVE / your account have
+(W), (M), (F) or specifically WD (create files) - NOT just AD (create folders).
+
+---- icacls "C:\Program Files\LGHUB\" ----
+  [step 'icacls C:\Program Files\LGHUB\' failed: C:\Program Files\LGHUB": The filename, directory name, or volume label syntax is incorrect.]
+---- icacls "C:\Program Files\" ----
+  [step 'icacls C:\Program Files\' failed: C:\Program Files": The filename, directory name, or volume label syntax is incorrect.]
+---- icacls "C:\" ----
+  C:\ BUILTIN\Administrators:(OI)(CI)(F)
+      NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+      BUILTIN\Users:(OI)(CI)(RX)
+      NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+      NT AUTHORITY\Authenticated Users:(AD)
+      S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
+      Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+  
+  Successfully processed 1 files; Failed processing 0 files
+
+==============================================================================
+F. EMPIRICAL WRITE TEST (creates and deletes scratch entries)
+==============================================================================
+ACL output is easy to misread. This tests it directly. It uses a scratch name, NOT
+logi_features.cfg, so nothing about the service changes either way.
+
+  C:\Program Files\LGHUB\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\LGHUB\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\Program Files\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\zz_logi_write_probe.tmp' is denied.")
+     create folder : yes  (this is the normal Windows default on C:\ - folders only, not files)
+
+==============================================================================
+G. ProgramData\LGHUB - THE OTHER POSSIBLE FLAG SOURCE
+==============================================================================
+Loose end from the Fedora side: GetFeatureFlag's map was traced to one populate path
+(logi_features.cfg). The binary also has a FeatureCanary subsystem with its own
+get_flag and a downloadable features config depot. If that feeds the same map and its
+cache is writable, that is a second route to llc_check = 0.
+
+  C:\ProgramData\LGHUB\depots\824196\applet_csgo\Applet_Files\gamestate_integration_logitech.cfg      404 bytes  7/31/2026 7:47:58 PM
+  C:\ProgramData\LGHUB\depots\824196\applet_dota2\Applet_Files\gamestate_integration_logitech.cfg      351 bytes  7/31/2026 7:47:57 PM
+---- icacls "C:\ProgramData\LGHUB" ----
+  C:\ProgramData\LGHUB NT AUTHORITY\SYSTEM:(F)
+                       NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                       BUILTIN\Administrators:(F)
+                       BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                       Everyone:(RX)
+                       Everyone:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+  create file in C:\ProgramData\LGHUB : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\ProgramData\LGHUB\zz_logi_write_probe.tmp' is denied.")
+
+==============================================================================
+VERDICT
+==============================================================================
+  (nothing recorded - check the sections above for errors)
+
+HOW TO READ THIS:
+
+  Handshake DROPPED  +  all three dirs deny file creation
+      -> The check is enforced and the flag is not attacker-settable on this machine.
+         The engagement closes, honestly, with evidence. Say so plainly. No report.
+
+  Handshake DROPPED  +  some dir allows a non-admin to create a FILE
+      -> The lead is live. Next step needs an explicit decision, because it modifies a
+         SYSTEM service config and needs a reboot to take effect:
+             Set-Content <thatdir>\logi_features.cfg 'llc_check = 0'   ; reboot ; re-run
+         A reply after that is the full chain: unprivileged file write -> SYSTEM IPC
+         accepts any peer -> RunLaunchableByAliasRequest is SYSTEM code execution.
+         DELETE the file afterwards and confirm the probe returns to DROPPED.
+         Do NOT send RunLaunchableByAliasRequest. The handshake is proof enough.
+
+  Handshake REPLIED right now
+      -> Stop. That is the report on its own, and it means llc_check is already 0 on
+         this machine - section D should show why.
+
+Note on ACLs: the Windows default on C:\ grants Authenticated Users (AD) - create
+FOLDERS - but not WD - create FILES. So "create folder: yes / create file: denied" is
+the expected stock result and means NOT exploitable. Do not report a folder-create as a
+file-write primitive.
+
+transcript: C:\Users\swaga\OneDrive\Desktop\logi-session4\transcript.txt
+logi-session4  2026-09-08 20:59:49
+output dir: C:\Users\swaga\OneDrive\Desktop\logi-session4
+
+==============================================================================
+A. CONTEXT
+==============================================================================
+user       : EPHAK\swaga
+elevated   : False
+powershell : 5.1.26100.9278 (Desktop)
+os         : Microsoft Windows 11 Home Single Language 10.0.26200.0
+  lghub_agent.exe 2026.5.939708
+  lghub_gl.exe 2.4.17.922017
+  lghub_gl_crashpad_handler.exe 0.1.8+853567, Sentry v0.9.1
+  lghub_software_manager.exe 2026.5.9708
+  lghub_sso_handler.exe 2026.5.939708
+  lghub_updater.exe 2026.5.939708
+  (scope is LATEST version only - confirm this is current before submitting anything)
+  pid 16436    lghub_agent
+  pid 15944    lghub_system_tray
+  pid 6260     lghub_updater
+  pid 6168     logi_lamparray_service.AMD64
+
+==============================================================================
+B. THE UPDATER PIPE
+==============================================================================
+expected name (hardcoded literal in lghub_updater.exe and lghub_agent.exe):
+  \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  160 named pipes visible
+  FOUND: \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  opened it from this non-elevated process -> the DACL admits us
+  (matches the Everyone:0x1FFFFF descriptor read out of the binary)
+
+==============================================================================
+C. THE HANDSHAKE TEST
+==============================================================================
+  running hello-probe.ps1 -SelfTestOnly first (validates the encoder on THIS PowerShell)...
+
+  running the real handshake...
+    
+
+==============================================================================
+D. logi_features.cfg - DOES IT ALREADY EXIST?
+==============================================================================
+Search path (resolved by walking UP from the exe directory; first match wins):
+  absent : C:\Program Files\LGHUB\logi_features.cfg
+  absent : C:\Program Files\logi_features.cfg
+  absent : C:\logi_features.cfg
+
+Reminder - the line that disables the check is exactly:   llc_check = 0
+accepted values: 0|1|false|true|off|on|yes|no   (key must be lowercase a-z0-9 . _ and spaces)
+
+==============================================================================
+E. ACLs ON THE SEARCH PATH
+==============================================================================
+What matters: does Users / Authenticated Users / INTERACTIVE / your account have
+(W), (M), (F) or specifically WD (create files) - NOT just AD (create folders).
+
+---- icacls "C:\Program Files\LGHUB\" ----
+  C:\Program Files\LGHUB NT SERVICE\TrustedInstaller:(I)(F)
+                         NT SERVICE\TrustedInstaller:(I)(CI)(IO)(F)
+                         NT AUTHORITY\SYSTEM:(I)(F)
+                         NT AUTHORITY\SYSTEM:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Administrators:(I)(F)
+                         BUILTIN\Administrators:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Users:(I)(RX)
+                         BUILTIN\Users:(I)(OI)(CI)(IO)(GR,GE)
+                         CREATOR OWNER:(I)(OI)(CI)(IO)(F)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\Program Files\" ----
+  C:\Program Files NT SERVICE\TrustedInstaller:(F)
+                   NT SERVICE\TrustedInstaller:(CI)(IO)(F)
+                   NT AUTHORITY\SYSTEM:(M)
+                   NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                   BUILTIN\Administrators:(M)
+                   BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                   BUILTIN\Users:(RX)
+                   BUILTIN\Users:(OI)(CI)(IO)(GR,GE)
+                   CREATOR OWNER:(OI)(CI)(IO)(F)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\" ----
+  C:\ BUILTIN\Administrators:(OI)(CI)(F)
+      NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+      BUILTIN\Users:(OI)(CI)(RX)
+      NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+      NT AUTHORITY\Authenticated Users:(AD)
+      S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
+      Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+  
+  Successfully processed 1 files; Failed processing 0 files
+
+==============================================================================
+F. EMPIRICAL WRITE TEST (creates and deletes scratch entries)
+==============================================================================
+ACL output is easy to misread. This tests it directly. It uses a scratch name, NOT
+logi_features.cfg, so nothing about the service changes either way.
+
+  C:\Program Files\LGHUB\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\LGHUB\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\Program Files\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\zz_logi_write_probe.tmp' is denied.")
+     create folder : yes  (this is the normal Windows default on C:\ - folders only, not files)
+
+==============================================================================
+G. ProgramData\LGHUB - THE OTHER POSSIBLE FLAG SOURCE
+==============================================================================
+Loose end from the Fedora side: GetFeatureFlag's map was traced to one populate path
+(logi_features.cfg). The binary also has a FeatureCanary subsystem with its own
+get_flag and a downloadable features config depot. If that feeds the same map and its
+cache is writable, that is a second route to llc_check = 0.
+
+  C:\ProgramData\LGHUB\depots\824196\applet_csgo\Applet_Files\gamestate_integration_logitech.cfg      404 bytes  7/31/2026 7:47:58 PM
+  C:\ProgramData\LGHUB\depots\824196\applet_dota2\Applet_Files\gamestate_integration_logitech.cfg      351 bytes  7/31/2026 7:47:57 PM
+---- icacls "C:\ProgramData\LGHUB" ----
+  C:\ProgramData\LGHUB NT AUTHORITY\SYSTEM:(F)
+                       NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                       BUILTIN\Administrators:(F)
+                       BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                       Everyone:(RX)
+                       Everyone:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+  create file in C:\ProgramData\LGHUB : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\ProgramData\LGHUB\zz_logi_write_probe.tmp' is denied.")
+
+==============================================================================
+VERDICT
+==============================================================================
+  (nothing recorded - check the sections above for errors)
+
+HOW TO READ THIS:
+
+  Handshake DROPPED  +  all three dirs deny file creation
+      -> The check is enforced and the flag is not attacker-settable on this machine.
+         The engagement closes, honestly, with evidence. Say so plainly. No report.
+
+  Handshake DROPPED  +  some dir allows a non-admin to create a FILE
+      -> The lead is live. Next step needs an explicit decision, because it modifies a
+         SYSTEM service config and needs a reboot to take effect:
+             Set-Content <thatdir>\logi_features.cfg 'llc_check = 0'   ; reboot ; re-run
+         A reply after that is the full chain: unprivileged file write -> SYSTEM IPC
+         accepts any peer -> RunLaunchableByAliasRequest is SYSTEM code execution.
+         DELETE the file afterwards and confirm the probe returns to DROPPED.
+         Do NOT send RunLaunchableByAliasRequest. The handshake is proof enough.
+
+  Handshake REPLIED right now
+      -> Stop. That is the report on its own, and it means llc_check is already 0 on
+         this machine - section D should show why.
+
+Note on ACLs: the Windows default on C:\ grants Authenticated Users (AD) - create
+FOLDERS - but not WD - create FILES. So "create folder: yes / create file: denied" is
+the expected stock result and means NOT exploitable. Do not report a folder-create as a
+file-write primitive.
+
+transcript: C:\Users\swaga\OneDrive\Desktop\logi-session4\transcript.txt
+logi-session4  2026-09-08 21:00:40
+output dir: C:\Users\swaga\OneDrive\Desktop\logi-session4
+
+==============================================================================
+A. CONTEXT
+==============================================================================
+user       : EPHAK\swaga
+elevated   : False
+powershell : 5.1.26100.9278 (Desktop)
+os         : Microsoft Windows 11 Home Single Language 10.0.26200.0
+  lghub_agent.exe 2026.5.939708
+  lghub_gl.exe 2.4.17.922017
+  lghub_gl_crashpad_handler.exe 0.1.8+853567, Sentry v0.9.1
+  lghub_software_manager.exe 2026.5.9708
+  lghub_sso_handler.exe 2026.5.939708
+  lghub_updater.exe 2026.5.939708
+  (scope is LATEST version only - confirm this is current before submitting anything)
+  pid 16436    lghub_agent
+  pid 15944    lghub_system_tray
+  pid 6260     lghub_updater
+  pid 6168     logi_lamparray_service.AMD64
+
+==============================================================================
+B. THE UPDATER PIPE
+==============================================================================
+expected name (hardcoded literal in lghub_updater.exe and lghub_agent.exe):
+  \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  157 named pipes visible
+  FOUND: \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  opened it from this non-elevated process -> the DACL admits us
+  (matches the Everyone:0x1FFFFF descriptor read out of the binary)
+
+==============================================================================
+C. THE HANDSHAKE TEST
+==============================================================================
+  running hello-probe.ps1 -SelfTestOnly first (validates the encoder on THIS PowerShell)...
+
+  running the real handshake...
+    
+
+==============================================================================
+D. logi_features.cfg - DOES IT ALREADY EXIST?
+==============================================================================
+Search path (resolved by walking UP from the exe directory; first match wins):
+  absent : C:\Program Files\LGHUB\logi_features.cfg
+  absent : C:\Program Files\logi_features.cfg
+  absent : C:\logi_features.cfg
+
+Reminder - the line that disables the check is exactly:   llc_check = 0
+accepted values: 0|1|false|true|off|on|yes|no   (key must be lowercase a-z0-9 . _ and spaces)
+
+==============================================================================
+E. ACLs ON THE SEARCH PATH
+==============================================================================
+What matters: does Users / Authenticated Users / INTERACTIVE / your account have
+(W), (M), (F) or specifically WD (create files) - NOT just AD (create folders).
+
+---- icacls "C:\Program Files\LGHUB\" ----
+  C:\Program Files\LGHUB NT SERVICE\TrustedInstaller:(I)(F)
+                         NT SERVICE\TrustedInstaller:(I)(CI)(IO)(F)
+                         NT AUTHORITY\SYSTEM:(I)(F)
+                         NT AUTHORITY\SYSTEM:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Administrators:(I)(F)
+                         BUILTIN\Administrators:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Users:(I)(RX)
+                         BUILTIN\Users:(I)(OI)(CI)(IO)(GR,GE)
+                         CREATOR OWNER:(I)(OI)(CI)(IO)(F)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\Program Files\" ----
+  C:\Program Files NT SERVICE\TrustedInstaller:(F)
+                   NT SERVICE\TrustedInstaller:(CI)(IO)(F)
+                   NT AUTHORITY\SYSTEM:(M)
+                   NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                   BUILTIN\Administrators:(M)
+                   BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                   BUILTIN\Users:(RX)
+                   BUILTIN\Users:(OI)(CI)(IO)(GR,GE)
+                   CREATOR OWNER:(OI)(CI)(IO)(F)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\" ----
+  C:\ BUILTIN\Administrators:(OI)(CI)(F)
+      NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+      BUILTIN\Users:(OI)(CI)(RX)
+      NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+      NT AUTHORITY\Authenticated Users:(AD)
+      S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
+      Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+  
+  Successfully processed 1 files; Failed processing 0 files
+
+==============================================================================
+F. EMPIRICAL WRITE TEST (creates and deletes scratch entries)
+==============================================================================
+ACL output is easy to misread. This tests it directly. It uses a scratch name, NOT
+logi_features.cfg, so nothing about the service changes either way.
+
+  C:\Program Files\LGHUB\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\LGHUB\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\Program Files\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\zz_logi_write_probe.tmp' is denied.")
+     create folder : yes  (this is the normal Windows default on C:\ - folders only, not files)
+
+==============================================================================
+G. ProgramData\LGHUB - THE OTHER POSSIBLE FLAG SOURCE
+==============================================================================
+Loose end from the Fedora side: GetFeatureFlag's map was traced to one populate path
+(logi_features.cfg). The binary also has a FeatureCanary subsystem with its own
+get_flag and a downloadable features config depot. If that feeds the same map and its
+cache is writable, that is a second route to llc_check = 0.
+
+  C:\ProgramData\LGHUB\depots\824196\applet_csgo\Applet_Files\gamestate_integration_logitech.cfg      404 bytes  7/31/2026 7:47:58 PM
+  C:\ProgramData\LGHUB\depots\824196\applet_dota2\Applet_Files\gamestate_integration_logitech.cfg      351 bytes  7/31/2026 7:47:57 PM
+---- icacls "C:\ProgramData\LGHUB" ----
+  C:\ProgramData\LGHUB NT AUTHORITY\SYSTEM:(F)
+                       NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                       BUILTIN\Administrators:(F)
+                       BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                       Everyone:(RX)
+                       Everyone:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+  create file in C:\ProgramData\LGHUB : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\ProgramData\LGHUB\zz_logi_write_probe.tmp' is denied.")
+
+==============================================================================
+VERDICT
+==============================================================================
+  (nothing recorded - check the sections above for errors)
+
+HOW TO READ THIS:
+
+  Handshake DROPPED  +  all three dirs deny file creation
+      -> The check is enforced and the flag is not attacker-settable on this machine.
+         The engagement closes, honestly, with evidence. Say so plainly. No report.
+
+  Handshake DROPPED  +  some dir allows a non-admin to create a FILE
+      -> The lead is live. Next step needs an explicit decision, because it modifies a
+         SYSTEM service config and needs a reboot to take effect:
+             Set-Content <thatdir>\logi_features.cfg 'llc_check = 0'   ; reboot ; re-run
+         A reply after that is the full chain: unprivileged file write -> SYSTEM IPC
+         accepts any peer -> RunLaunchableByAliasRequest is SYSTEM code execution.
+         DELETE the file afterwards and confirm the probe returns to DROPPED.
+         Do NOT send RunLaunchableByAliasRequest. The handshake is proof enough.
+
+  Handshake REPLIED right now
+      -> Stop. That is the report on its own, and it means llc_check is already 0 on
+         this machine - section D should show why.
+
+Note on ACLs: the Windows default on C:\ grants Authenticated Users (AD) - create
+FOLDERS - but not WD - create FILES. So "create folder: yes / create file: denied" is
+the expected stock result and means NOT exploitable. Do not report a folder-create as a
+file-write primitive.
+
+transcript: C:\Users\swaga\OneDrive\Desktop\logi-session4\transcript.txt
+logi-session4  2026-09-08 21:00:40
+output dir: C:\Users\swaga\OneDrive\Desktop\logi-session4
+
+==============================================================================
+A. CONTEXT
+==============================================================================
+user       : EPHAK\swaga
+elevated   : False
+powershell : 5.1.26100.9278 (Desktop)
+os         : Microsoft Windows 11 Home Single Language 10.0.26200.0
+  lghub_agent.exe 2026.5.939708
+  lghub_gl.exe 2.4.17.922017
+  lghub_gl_crashpad_handler.exe 0.1.8+853567, Sentry v0.9.1
+  lghub_software_manager.exe 2026.5.9708
+  lghub_sso_handler.exe 2026.5.939708
+  lghub_updater.exe 2026.5.939708
+  (scope is LATEST version only - confirm this is current before submitting anything)
+  pid 16436    lghub_agent
+  pid 15944    lghub_system_tray
+  pid 6260     lghub_updater
+  pid 6168     logi_lamparray_service.AMD64
+
+==============================================================================
+B. THE UPDATER PIPE
+==============================================================================
+expected name (hardcoded literal in lghub_updater.exe and lghub_agent.exe):
+  \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  157 named pipes visible
+  FOUND: \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  opened it from this non-elevated process -> the DACL admits us
+  (matches the Everyone:0x1FFFFF descriptor read out of the binary)
+
+==============================================================================
+C. THE HANDSHAKE TEST
+==============================================================================
+  skipped (-SkipHandshake)
+
+==============================================================================
+D. logi_features.cfg - DOES IT ALREADY EXIST?
+==============================================================================
+Search path (resolved by walking UP from the exe directory; first match wins):
+  absent : C:\Program Files\LGHUB\logi_features.cfg
+  absent : C:\Program Files\logi_features.cfg
+  absent : C:\logi_features.cfg
+
+Reminder - the line that disables the check is exactly:   llc_check = 0
+accepted values: 0|1|false|true|off|on|yes|no   (key must be lowercase a-z0-9 . _ and spaces)
+
+==============================================================================
+E. ACLs ON THE SEARCH PATH
+==============================================================================
+What matters: does Users / Authenticated Users / INTERACTIVE / your account have
+(W), (M), (F) or specifically WD (create files) - NOT just AD (create folders).
+
+---- icacls "C:\Program Files\LGHUB\" ----
+  C:\Program Files\LGHUB NT SERVICE\TrustedInstaller:(I)(F)
+                         NT SERVICE\TrustedInstaller:(I)(CI)(IO)(F)
+                         NT AUTHORITY\SYSTEM:(I)(F)
+                         NT AUTHORITY\SYSTEM:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Administrators:(I)(F)
+                         BUILTIN\Administrators:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Users:(I)(RX)
+                         BUILTIN\Users:(I)(OI)(CI)(IO)(GR,GE)
+                         CREATOR OWNER:(I)(OI)(CI)(IO)(F)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\Program Files\" ----
+  C:\Program Files NT SERVICE\TrustedInstaller:(F)
+                   NT SERVICE\TrustedInstaller:(CI)(IO)(F)
+                   NT AUTHORITY\SYSTEM:(M)
+                   NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                   BUILTIN\Administrators:(M)
+                   BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                   BUILTIN\Users:(RX)
+                   BUILTIN\Users:(OI)(CI)(IO)(GR,GE)
+                   CREATOR OWNER:(OI)(CI)(IO)(F)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\" ----
+  C:\ BUILTIN\Administrators:(OI)(CI)(F)
+      NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+      BUILTIN\Users:(OI)(CI)(RX)
+      NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+      NT AUTHORITY\Authenticated Users:(AD)
+      S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
+      Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+  
+  Successfully processed 1 files; Failed processing 0 files
+
+==============================================================================
+F. EMPIRICAL WRITE TEST (creates and deletes scratch entries)
+==============================================================================
+ACL output is easy to misread. This tests it directly. It uses a scratch name, NOT
+logi_features.cfg, so nothing about the service changes either way.
+
+  C:\Program Files\LGHUB\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\LGHUB\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\Program Files\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\zz_logi_write_probe.tmp' is denied.")
+     create folder : yes  (this is the normal Windows default on C:\ - folders only, not files)
+
+==============================================================================
+G. ProgramData\LGHUB - THE OTHER POSSIBLE FLAG SOURCE
+==============================================================================
+Loose end from the Fedora side: GetFeatureFlag's map was traced to one populate path
+(logi_features.cfg). The binary also has a FeatureCanary subsystem with its own
+get_flag and a downloadable features config depot. If that feeds the same map and its
+cache is writable, that is a second route to llc_check = 0.
+
+  C:\ProgramData\LGHUB\depots\824196\applet_csgo\Applet_Files\gamestate_integration_logitech.cfg      404 bytes  7/31/2026 7:47:58 PM
+  C:\ProgramData\LGHUB\depots\824196\applet_dota2\Applet_Files\gamestate_integration_logitech.cfg      351 bytes  7/31/2026 7:47:57 PM
+---- icacls "C:\ProgramData\LGHUB" ----
+  C:\ProgramData\LGHUB NT AUTHORITY\SYSTEM:(F)
+                       NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                       BUILTIN\Administrators:(F)
+                       BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                       Everyone:(RX)
+                       Everyone:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+  create file in C:\ProgramData\LGHUB : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\ProgramData\LGHUB\zz_logi_write_probe.tmp' is denied.")
+
+==============================================================================
+VERDICT
+==============================================================================
+  (nothing recorded - check the sections above for errors)
+
+HOW TO READ THIS:
+
+  Handshake DROPPED  +  all three dirs deny file creation
+      -> The check is enforced and the flag is not attacker-settable on this machine.
+         The engagement closes, honestly, with evidence. Say so plainly. No report.
+
+  Handshake DROPPED  +  some dir allows a non-admin to create a FILE
+      -> The lead is live. Next step needs an explicit decision, because it modifies a
+         SYSTEM service config and needs a reboot to take effect:
+             Set-Content <thatdir>\logi_features.cfg 'llc_check = 0'   ; reboot ; re-run
+         A reply after that is the full chain: unprivileged file write -> SYSTEM IPC
+         accepts any peer -> RunLaunchableByAliasRequest is SYSTEM code execution.
+         DELETE the file afterwards and confirm the probe returns to DROPPED.
+         Do NOT send RunLaunchableByAliasRequest. The handshake is proof enough.
+
+  Handshake REPLIED right now
+      -> Stop. That is the report on its own, and it means llc_check is already 0 on
+         this machine - section D should show why.
+
+Note on ACLs: the Windows default on C:\ grants Authenticated Users (AD) - create
+FOLDERS - but not WD - create FILES. So "create folder: yes / create file: denied" is
+the expected stock result and means NOT exploitable. Do not report a folder-create as a
+file-write primitive.
+
+transcript: C:\Users\swaga\OneDrive\Desktop\logi-session4\transcript.txt
+logi-session4  2026-09-08 21:01:32
+output dir: C:\Users\swaga\OneDrive\Desktop\logi-session4
+
+==============================================================================
+A. CONTEXT
+==============================================================================
+user       : EPHAK\swaga
+elevated   : False
+powershell : 5.1.26100.9278 (Desktop)
+os         : Microsoft Windows 11 Home Single Language 10.0.26200.0
+  lghub_agent.exe 2026.5.939708
+  lghub_gl.exe 2.4.17.922017
+  lghub_gl_crashpad_handler.exe 0.1.8+853567, Sentry v0.9.1
+  lghub_software_manager.exe 2026.5.9708
+  lghub_sso_handler.exe 2026.5.939708
+  lghub_updater.exe 2026.5.939708
+  (scope is LATEST version only - confirm this is current before submitting anything)
+  pid 16436    lghub_agent
+  pid 15944    lghub_system_tray
+  pid 6260     lghub_updater
+  pid 6168     logi_lamparray_service.AMD64
+
+==============================================================================
+B. THE UPDATER PIPE
+==============================================================================
+expected name (hardcoded literal in lghub_updater.exe and lghub_agent.exe):
+  \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  157 named pipes visible
+  FOUND: \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+  opened it from this non-elevated process -> the DACL admits us
+  (matches the Everyone:0x1FFFFF descriptor read out of the binary)
+
+==============================================================================
+C. THE HANDSHAKE TEST
+==============================================================================
+  running hello-probe.ps1 -SelfTestOnly first (validates the encoder on THIS PowerShell)...
+
+  running the real handshake...
+    self-test expected : 1500000008011802208180c0082a0a1205656e2d55531a0101
+    self-test produced : 1500000008011802208180c0082a0a1205656e2d55531a0101
+    self-test OK.
+    
+    user         : EPHAK\swaga
+    elevated     : False
+    pid          : 15832
+    pipe         : \\.\pipe\a62ed1c1-e1a9-5495-9038-16bd49ec7341
+    content_type : 0x1100001
+    frame        : 110 bytes
+    frame hex    : 6a00000008011802208180c0082a5f0a530a0570726f6265120570726f62651a05312e302e3020d87b2a39433a5c57696e646f77735c53797374656d33325c57696e646f7773506f7765725368656c6c5c76312e305c706f7765727368656c6c2e6578651205656e2d55531a0101
+    
+    connected.
+    
+    RESULT: DROPPED - the server closed the pipe before it would accept our bytes.
+      (Pipe is broken.)
+    This is the accept-time rejection in its strongest form: the connection was torn
+    down between connect() and write(), i.e. the peer was refused on inspection, not
+    on the content of the handshake. The signature check is ENFORCED.
+    Write it up as "no finding" for the pipe handshake.
+
+==============================================================================
+D. logi_features.cfg - DOES IT ALREADY EXIST?
+==============================================================================
+Search path (resolved by walking UP from the exe directory; first match wins):
+  absent : C:\Program Files\LGHUB\logi_features.cfg
+  absent : C:\Program Files\logi_features.cfg
+  absent : C:\logi_features.cfg
+
+Reminder - the line that disables the check is exactly:   llc_check = 0
+accepted values: 0|1|false|true|off|on|yes|no   (key must be lowercase a-z0-9 . _ and spaces)
+
+==============================================================================
+E. ACLs ON THE SEARCH PATH
+==============================================================================
+What matters: does Users / Authenticated Users / INTERACTIVE / your account have
+(W), (M), (F) or specifically WD (create files) - NOT just AD (create folders).
+
+---- icacls "C:\Program Files\LGHUB\" ----
+  C:\Program Files\LGHUB NT SERVICE\TrustedInstaller:(I)(F)
+                         NT SERVICE\TrustedInstaller:(I)(CI)(IO)(F)
+                         NT AUTHORITY\SYSTEM:(I)(F)
+                         NT AUTHORITY\SYSTEM:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Administrators:(I)(F)
+                         BUILTIN\Administrators:(I)(OI)(CI)(IO)(F)
+                         BUILTIN\Users:(I)(RX)
+                         BUILTIN\Users:(I)(OI)(CI)(IO)(GR,GE)
+                         CREATOR OWNER:(I)(OI)(CI)(IO)(F)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(RX)
+                         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(I)(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\Program Files\" ----
+  C:\Program Files NT SERVICE\TrustedInstaller:(F)
+                   NT SERVICE\TrustedInstaller:(CI)(IO)(F)
+                   NT AUTHORITY\SYSTEM:(M)
+                   NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                   BUILTIN\Administrators:(M)
+                   BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                   BUILTIN\Users:(RX)
+                   BUILTIN\Users:(OI)(CI)(IO)(GR,GE)
+                   CREATOR OWNER:(OI)(CI)(IO)(F)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(RX)
+                   APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+---- icacls "C:\" ----
+  C:\ BUILTIN\Administrators:(OI)(CI)(F)
+      NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+      BUILTIN\Users:(OI)(CI)(RX)
+      NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+      NT AUTHORITY\Authenticated Users:(AD)
+      S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
+      Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+  
+  Successfully processed 1 files; Failed processing 0 files
+
+==============================================================================
+F. EMPIRICAL WRITE TEST (creates and deletes scratch entries)
+==============================================================================
+ACL output is easy to misread. This tests it directly. It uses a scratch name, NOT
+logi_features.cfg, so nothing about the service changes either way.
+
+  C:\Program Files\LGHUB\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\LGHUB\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\Program Files\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\Program Files\zz_logi_write_probe.tmp' is denied.")
+     create folder : denied
+  C:\
+     create file   : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\zz_logi_write_probe.tmp' is denied.")
+     create folder : yes  (this is the normal Windows default on C:\ - folders only, not files)
+
+==============================================================================
+G. ProgramData\LGHUB - THE OTHER POSSIBLE FLAG SOURCE
+==============================================================================
+Loose end from the Fedora side: GetFeatureFlag's map was traced to one populate path
+(logi_features.cfg). The binary also has a FeatureCanary subsystem with its own
+get_flag and a downloadable features config depot. If that feeds the same map and its
+cache is writable, that is a second route to llc_check = 0.
+
+  C:\ProgramData\LGHUB\depots\824196\applet_csgo\Applet_Files\gamestate_integration_logitech.cfg      404 bytes  7/31/2026 7:47:58 PM
+  C:\ProgramData\LGHUB\depots\824196\applet_dota2\Applet_Files\gamestate_integration_logitech.cfg      351 bytes  7/31/2026 7:47:57 PM
+---- icacls "C:\ProgramData\LGHUB" ----
+  C:\ProgramData\LGHUB NT AUTHORITY\SYSTEM:(F)
+                       NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                       BUILTIN\Administrators:(F)
+                       BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                       Everyone:(RX)
+                       Everyone:(OI)(CI)(IO)(GR,GE)
+  
+  Successfully processed 1 files; Failed processing 0 files
+  create file in C:\ProgramData\LGHUB : denied  (Exception calling "WriteAllText" with "2" argument(s): "Access to the path 'C:\ProgramData\LGHUB\zz_logi_write_probe.tmp' is denied.")
+
+==============================================================================
+VERDICT
+==============================================================================
+  Handshake DROPPED - accept-time signature check is enforced (expected)
+
+HOW TO READ THIS:
+
+  Handshake DROPPED  +  all three dirs deny file creation
+      -> The check is enforced and the flag is not attacker-settable on this machine.
+         The engagement closes, honestly, with evidence. Say so plainly. No report.
+
+  Handshake DROPPED  +  some dir allows a non-admin to create a FILE
+      -> The lead is live. Next step needs an explicit decision, because it modifies a
+         SYSTEM service config and needs a reboot to take effect:
+             Set-Content <thatdir>\logi_features.cfg 'llc_check = 0'   ; reboot ; re-run
+         A reply after that is the full chain: unprivileged file write -> SYSTEM IPC
+         accepts any peer -> RunLaunchableByAliasRequest is SYSTEM code execution.
+         DELETE the file afterwards and confirm the probe returns to DROPPED.
+         Do NOT send RunLaunchableByAliasRequest. The handshake is proof enough.
+
+  Handshake REPLIED right now
+      -> Stop. That is the report on its own, and it means llc_check is already 0 on
+         this machine - section D should show why.
+
+Note on ACLs: the Windows default on C:\ grants Authenticated Users (AD) - create
+FOLDERS - but not WD - create FILES. So "create folder: yes / create file: denied" is
+the expected stock result and means NOT exploitable. Do not report a folder-create as a
+file-write primitive.
+
+transcript: C:\Users\swaga\OneDrive\Desktop\logi-session4\transcript.txt
