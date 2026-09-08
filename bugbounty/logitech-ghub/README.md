@@ -15,7 +15,7 @@ Read in this order:
 | `windows-session-2-results.md` | Session 3 — identified the real IPC transport (a GUID-named pipe) and closed the TCP 9180 lead. |
 | `WHAT-DO-I-DO-fedora.md` | Session 3's instructions for the second Fedora run. Executed; superseded. |
 | **`pipe-framing.md`** | **Session 4 — current state.** Framing, `content_type` table, the pipe-name literal, and the `llc_check` feature flag. Every claim cites an address. |
-| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. One handshake test, then three `icacls` commands. |
+| **`WHAT-DO-I-DO-windows-3.md`** | **Do this next**, on Windows. It is one command: `windows\run-session.ps1`. |
 
 ## Current status
 
@@ -53,22 +53,35 @@ See `WHAT-DO-I-DO-windows-3.md` §2.
 ## Layout
 
 ```
-pipe-framing.md            session 4's deliverable: framing, content types, llc_check
+pipe-framing.md            session 4's deliverable: framing, content types, llc_check,
+                           and §10 - how every claim in it was independently verified
 protos/                    69 .proto files reconstructed from lghub_updater.exe
 protos_agent/              same, recovered from lghub_agent.exe
-windows/                   hello-probe.ps1  <- run this; find-logi-endpoint.ps1; ipc_probe.py
-tools/                     build_hello.py (generates the envelope), extract_protos.py,
-                           Query.java + Wrappers.java (the Ghidra headless scripts used),
-                           DumpDepot.java, TraceAuth.java
+windows/  run-session.ps1     <- RUN THIS. the whole Windows session, one command
+          hello-probe.ps1     the handshake test on its own (run-session.ps1 calls it)
+          find-logi-endpoint.ps1, ipc_probe.py   superseded, kept for the record
+tools/    build_hello.py      generates the envelope (source of the known-good hex)
+          mock-updater.ps1    fake updater speaking the recovered framing, for testing
+                              hello-probe.ps1 off-target
+          roundtrip_check.py  parses a generated frame with descriptors pulled out of
+                              lghub_updater.exe itself
+          Query.java, Wrappers.java   the Ghidra headless scripts used this session
+          extract_protos.py, DumpDepot.java, TraceAuth.java
 analysis/                  Ghidra output backing FEDORA-SESSION-RESULTS.md §2
 evidence/windows-session-2/ raw output backing windows-session-2-results.md
 ```
 
 ## Tooling notes
 
+- **Both Windows scripts were actually executed before being handed over**, not just written.
+  PowerShell 7.4.6 was installed on the Fedora box; `hello-probe.ps1` was driven end to end
+  against `tools/mock-updater.ps1` (reply / drop / timeout / no-server / tampered self-test),
+  and `run-session.ps1` was run in an environment where nearly every Windows call fails.
+  **Four real defects were found that way**, including a write test that reported a false
+  `WRITABLE` into its own verdict. See `pipe-framing.md` §10.4. Session 2's experience —
+  a script that failed silently and nearly inverted the finding — is why this is now the rule.
 - `windows/hello-probe.ps1` **self-tests its protobuf encoder against a known-good frame and
-  aborts if it does not match.** This is deliberate: `find-logi-endpoint.ps1` v1 failed
-  silently and would have produced the opposite conclusion, and that near-miss cost a session.
+  aborts if it does not match**, before opening the pipe.
 - `windows/find-logi-endpoint.ps1` v1 was broken — four defects, all fixed in v2; see
   `windows-session-2-results.md` §5.
 - `windows/ipc_probe.py` has never been run and is now superseded — `python` on the Windows
