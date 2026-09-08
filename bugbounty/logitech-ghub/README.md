@@ -20,7 +20,7 @@ Read in this order:
 
 ## Current status
 
-Three things are settled and one thing needs one live test to close for good.
+Three things are settled and one thing needs one live test to close for good — every route this box can check without a live process is now closed, including the `FeatureCanary` loose end (`acl-evidence.md` addendum).
 
 **Settled — the handshake test is now one write.** The updater's IPC is a byte-mode named
 pipe with a **`uint32` little-endian length prefix + serialized `Envelope`**;
