@@ -545,8 +545,24 @@ exercised:
 | server accepts but never replies | `RESULT: DROPPED - no reply within the timeout`, exit 0 |
 | no server at all | `CONNECT FAILED`, exit 2 |
 
-**Two real defects were found and fixed by running it**, both of which would have aborted the
-test on the Windows box:
+`windows/run-session.ps1` — the one-shot session driver — was run the same way, in an
+environment where nearly every Windows call fails, to check that a single broken step can
+never abort the run or corrupt the verdict. **Two further defects surfaced there:**
+
+3. Non-terminating errors (`Join-Path` on a missing drive, a missing `icacls`) sprayed past
+   `try`/`catch` and the run continued in an unknown state. `Step` now sets
+   `$ErrorActionPreference = 'Stop'` inside the step body so they are caught and reported as
+   one labelled line.
+4. **The write test reported a false `WRITABLE` into the VERDICT.** `WriteAllText` on a
+   non-existent directory silently succeeded against a relative path, and that became a red
+   finding. This is the single most dangerous failure this script could have — a false
+   writable would send the next session down a wrong path and toward a bogus report. Now it
+   requires the path to be rooted, requires the directory to exist, re-checks
+   `File.Exists` at the intended path before believing the write, and refuses to run the
+   filesystem checks at all off Windows.
+
+**Two defects in `hello-probe.ps1` were found and fixed the same way**, both of which would
+have aborted the test on the Windows box:
 
 1. `[Security.Principal.WindowsIdentity]::GetCurrent()` threw and killed the script. Now
    wrapped in try/catch — context reporting can never abort the probe.
