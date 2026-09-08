@@ -1,0 +1,97 @@
+syntax = "proto3";
+package logi.protocol.analog_preset;
+
+message Capabilities {
+  bool supports_analog_feature_configuration = 1;
+  repeated logi.protocol.analog_preset.Analog.Capability supported_analog_features = 2;
+  bool has_enable_toggle_rapid_trigger = 3;
+  logi.protocol.analog_preset.Analog.BindingFeatureSupport supported_analog_binding_features = 4;
+  logi.protocol.analog_preset.Analog.KeyTravelConfig key_travel_config = 5;
+  bool has_key_priority_toggle = 6;
+  logi.protocol.analog_preset.Analog.ClickHapticsConfig click_haptics_config = 7;
+  bool supports_actuation_point_immersive_lighting = 8;
+}
+message Analog {
+  enum Capability {
+    ACTUATION_POINT = 0;
+    RAPID_TRIGGER = 1;
+    BINDING_FEATURES = 2;
+    CLICK_HAPTICS = 3;
+  }
+  enum BindingFeatureFlavor {
+    DISTANCE_PRIORITY = 0;
+    LAST_INPUT_PRIORITY = 1;
+    ORDINAL_PRIORITY = 2;
+    REVERSE_ORDINAL_PRIORITY = 3;
+    NEUTRAL = 4;
+  }
+  message BindingFeatureSupport {
+    repeated logi.protocol.analog_preset.Analog.BindingFeatureFlavor flavors = 1;
+    bool supports_fully_pressed_state = 2;
+  }
+  message KeyTravelEvent {
+    uint32 cid = 1;
+    float travel = 2;
+  }
+  message KeyTravelEvents {
+    map<uint32, logi.protocol.analog_preset.Analog.KeyTravelEvent> key_travel_events = 1;
+  }
+  message KeyFilter {
+    repeated uint32 cids = 1;
+  }
+  message ClickHapticsConfig {
+    float minimum = 1;
+    float maximum = 2;
+    float step = 3;
+  }
+  message KeyTravelConfig {
+    message MultiActuationConfig {
+      float difference = 1;
+      repeated float maximums = 2;
+      repeated float defaults = 3;
+    }
+    message TravelConfig {
+      float maximum = 1;
+      float minimum = 2;
+      float step = 3;
+    }
+    logi.protocol.analog_preset.Analog.KeyTravelConfig.TravelConfig actuation_point = 1;
+    logi.protocol.analog_preset.Analog.KeyTravelConfig.TravelConfig rapid_trigger = 2;
+    logi.protocol.analog_preset.Analog.KeyTravelConfig.MultiActuationConfig multi_actuation_point = 3;
+  }
+  message AnalogSwitchTypeSupportAndStates {
+    map<uint32, bool> cid_map = 1;
+  }
+  message NonAnalogSwitchConfigurationConflict {
+    message ConflictingKeys {
+      repeated uint32 cid_list = 1;
+    }
+    string profile_id = 1;
+    string analog_preset_id = 2;
+    string input_preset_id = 3;
+    logi.protocol.analog_preset.Analog.NonAnalogSwitchConfigurationConflict.ConflictingKeys actuation_point_conflicts = 4;
+    logi.protocol.analog_preset.Analog.NonAnalogSwitchConfigurationConflict.ConflictingKeys rapid_trigger_conflicts = 5;
+    logi.protocol.analog_preset.Analog.NonAnalogSwitchConfigurationConflict.ConflictingKeys binding_features_conflicts = 6;
+    logi.protocol.analog_preset.Analog.NonAnalogSwitchConfigurationConflict.ConflictingKeys multi_action_conflicts = 7;
+  }
+}
+message AnalogPreset {
+  message Configuration {
+    string analog_preset_id = 1;
+  }
+  message BindingFeatureEntry {
+    repeated uint32 trigger_keys_cids = 1;
+    logi.protocol.analog_preset.Analog.BindingFeatureFlavor flavor = 2;
+    bool is_fully_pressed_state_active = 3;
+  }
+  bool rapid_trigger_enabled = 1;
+  bool key_priority_enabled = 7;
+  float global_actuation_point_value = 2;
+  float global_rapid_trigger_value = 3;
+  uint32 global_click_haptics_value = 8;
+  map<uint32, float> actuation_point_values = 4;
+  map<uint32, float> rapid_trigger_values = 5;
+  map<uint32, float> click_haptics_values = 9;
+  repeated logi.protocol.analog_preset.AnalogPreset.BindingFeatureEntry binding_feature_values = 6;
+  repeated uint32 rapid_trigger_explicit_states = 10;
+}

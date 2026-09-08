@@ -1,0 +1,25 @@
+syntax = "proto3";
+package logi.protocol.crash_reporting;
+
+message Status {
+  bool enabled = 1;
+  bool user_prompted = 2;
+  string version_number = 3;
+}
+message ManualEvent {
+  enum Action {
+    INVALID = 0;
+    SEND = 1;
+    CANCEL = 2;
+  }
+  logi.protocol.crash_reporting.ManualEvent.Action action = 1;
+  string message = 2;
+  repeated string attachments = 3;
+}
+message UserInfo {
+  string user_id = 1;
+  string user_name = 2;
+  string lids_id = 3;
+  string analytics_id = 4;
+  string laclient_id = 5;
+}

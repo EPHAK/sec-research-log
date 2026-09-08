@@ -1,0 +1,224 @@
+syntax = "proto3";
+package logi.protocol.community;
+import "logi/protocol/cards.proto";
+import "logi/protocol/display.proto";
+
+enum Category {
+  INVALID = 0;
+  PROFILE = 1;
+  LIGHTING_EFFECT = 2;
+  AUDIO_EQ = 3;
+  AUDIO_VOICE = 4;
+  AUDIO_VOICE_2 = 5;
+  VOICE_FX = 6;
+  AUDIO_EQ_10_BAND = 7;
+  AUDIO_EQ_CENTURION = 8;
+  AUDIO_EQ_CENTURION_PRO = 9;
+  MOUSE_SETTINGS_ADVANCED = 10;
+  DISABLE_CONTROLS_PRESET = 11;
+  AUDIO_EQ_UNIFIED = 12;
+  INPUT_PRESET = 13;
+  AUDIO_LOGIVOICE = 14;
+  AUDIO_MICROPHONE_PRESET = 15;
+  AUDIO_MASCOT = 16;
+  ALL = 17;
+  AUDIO = 18;
+  PROMOTION_CARD = 19;
+  ANALOG_PRESET = 20;
+}
+message Status {
+  enum State {
+    INVALID = 0;
+    OFFLINE = 1;
+    READY = 2;
+  }
+  logi.protocol.community.Status.State state = 1;
+  string error_message = 2;
+}
+message Blob {
+  string id = 1;
+  bool as_data_uri = 2;
+  string access_token = 3;
+  string url = 10;
+  string data_uri = 11;
+}
+message Badge {
+  string name = 1;
+  string tag = 2;
+  string color = 3;
+  string image = 4;
+  string wordmark = 5;
+}
+message Medal {
+  string name = 1;
+  string tag = 2;
+  string image = 3;
+}
+message User {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  logi.protocol.community.Blob avatar = 4;
+  repeated logi.protocol.community.Entity entities = 5;
+  string my_gear_metadata = 6;
+  string my_apps_metadata = 7;
+  repeated logi.protocol.community.Badge badges = 8;
+  string access_token = 9;
+  bool verified = 10;
+}
+message Publishing {
+  string name = 1;
+  string description = 2;
+  repeated string tags = 3;
+  repeated string device_model_ids = 4;
+  bool include_all_macros = 5;
+  string metadata = 6;
+  bool is_public = 7;
+}
+message NamedBlob {
+  string key = 1;
+  string data_uri = 2;
+  string blob_id = 3;
+  string url = 4;
+  string access_token = 5;
+}
+message PublishEntity {
+  logi.protocol.community.Publishing publishing = 1;
+  logi.protocol.community.Category category = 2;
+  string profile_id = 3;
+  string lighting_effect_id = 4;
+  string audio_eq_id = 5;
+  string audio_voice_id = 6;
+  string mouse_settings_advanced_id = 7;
+  string disable_controls_preset_id = 8;
+  string input_preset_id = 9;
+  string analog_preset_id = 10;
+  string mascot_preset_id = 11;
+  logi.protocol.community.Blob image = 20;
+  repeated logi.protocol.community.NamedBlob blobs = 21;
+  string binary_id = 22;
+  string application_id = 23;
+  repeated string system_tags = 24;
+  string access_token = 25;
+  repeated string hidden_tags = 26;
+}
+message PublishProgress {
+  float progress = 1;
+}
+message Query {
+  enum Sorting {
+    INVALID = 0;
+    TRENDING = 1;
+    MOST_POPULAR = 2;
+    MOST_DOWNLOADED = 3;
+    ALPHABETIC = 4;
+    MOST_RECENT = 5;
+  }
+  string search = 1;
+  repeated string categories = 2;
+  repeated string tags = 3;
+  string application_id = 4;
+  string entity_id = 5;
+  repeated string promo_tags = 6;
+  uint32 page = 10;
+  uint32 items_per_page = 11;
+  logi.protocol.community.Query.Sorting sort_by = 12;
+  string context = 13;
+  string name = 14;
+  repeated string hidden_tags = 15;
+  repeated string system_tags = 16;
+  repeated string prefix = 17;
+  string access_token = 18;
+}
+message QueryDefaults {
+  repeated logi.protocol.community.Query queries = 1;
+}
+message Tag {
+  string tag = 1;
+  uint32 frequency = 2;
+}
+message Entity {
+  enum State {
+    SUBMITTED = 0;
+    APPROVED = 1;
+    BLOCKED = 2;
+  }
+  string id = 1;
+  string author_id = 2;
+  string name = 3;
+  string description = 4;
+  string image_url = 5;
+  bool is_public = 6;
+  bool is_blocked = 7;
+  string block_reason = 8;
+  logi.protocol.community.Entity.State state = 9;
+  logi.protocol.community.Category category = 10;
+  string application_id = 11;
+  repeated string device_model_ids = 12;
+  string metadata = 13;
+  repeated string user_tags = 14;
+  repeated string system_tags = 15;
+  uint32 download_count = 16;
+  uint32 upvote_count = 17;
+  bool upvoted = 18;
+  string created_at = 19;
+  string updated_at = 20;
+  string blob_url = 21;
+  repeated logi.protocol.community.NamedBlob blobs = 22;
+  repeated logi.protocol.community.Medal medals = 23;
+  string stroke_color = 24;
+  string access_token = 25;
+  string search_text = 90;
+  repeated string search_tags = 91;
+  repeated string hidden_tags = 92;
+}
+message UpvoteEntity {
+  string entity_id = 1;
+  bool upvoted = 2;
+  uint32 upvote_count = 3;
+  string access_token = 4;
+}
+message ResultSet {
+  repeated logi.protocol.community.Entity entities = 1;
+  repeated logi.protocol.community.User authors = 2;
+  repeated logi.protocol.community.Tag tag_cloud = 3;
+  uint32 page = 10;
+  uint32 items_per_page = 11;
+  string context = 12;
+}
+message DownloadEntity {
+  string entity_id = 1;
+  uint32 download_count = 2;
+  string url = 3;
+  logi.protocol.community.Category category = 10;
+  string profile_id = 11;
+  string lighting_effect_id = 12;
+  string audio_eq_id = 13;
+  string audio_voice_id = 14;
+  string mouse_settings_advanced_id = 15;
+  string disable_controls_preset_id = 16;
+  string input_preset_id = 17;
+  string analog_preset_id = 18;
+  string access_token = 19;
+  string device_signature = 20;
+}
+message DeleteEntity {
+  string entity_id = 1;
+  string access_token = 2;
+}
+message UnifiedEqualizerPreview {
+  string display_type = 1;
+  string instance_name = 2;
+  repeated float gains = 3;
+  repeated float frequencies = 4;
+  repeated float q_factors = 5;
+}
+message CompleteInputPreset {
+  logi.protocol.cards.Card input_preset_card = 1;
+  repeated logi.protocol.cards.Card macro_cards = 2;
+}
+message ChangeVisibility {
+  string entity_id = 1;
+  bool is_public = 2;
+  string access_token = 3;
+}

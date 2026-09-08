@@ -1,0 +1,13 @@
+syntax = "proto3";
+package logi.protocol.event_tracing_control;
+
+message Trigger {
+  enum Action {
+    ACTION_INVALID = 0;
+    ACTION_ENABLE = 1;
+    ACTION_DISABLE = 2;
+    ACTION_ARCHIVE = 3;
+  }
+  logi.protocol.event_tracing_control.Trigger.Action action = 1;
+  string archive_path = 2;
+}

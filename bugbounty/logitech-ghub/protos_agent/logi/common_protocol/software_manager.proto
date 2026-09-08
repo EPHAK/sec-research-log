@@ -1,0 +1,55 @@
+syntax = "proto3";
+package logi.protocol.software_manager;
+import "logi/common_protocol/application_source.proto";
+import "logi/common_protocol/updates.proto";
+
+message Action {
+  enum Type {
+    INVALID = 0;
+    INSTALL = 1;
+    UPDATE = 2;
+    UNINSTALL = 3;
+    REINSTALL = 4;
+  }
+  logi.protocol.software_manager.Action.Type type = 1;
+  string app_tag = 2;
+  int32 gate_id = 5;
+  string version = 6;
+  string old_version = 7;
+  int64 download_size = 8;
+  int64 install_size = 9;
+}
+message Actions {
+  repeated logi.protocol.software_manager.Action actions = 1;
+  bool force = 2;
+  bool keep_user_settings = 3;
+}
+message AppGateInfo {
+  string app_id = 1;
+  int32 gate_id = 3;
+  string core_depot_name = 4;
+  logi.protocol.application_source.Application.Relationships relationships = 5;
+}
+message AppInfo {
+  string name = 1;
+  string app_tag = 2;
+  string install_location = 3;
+  uint64 size_on_disk = 4;
+  uint64 pending_download_size = 5;
+  string installed_gate = 6;
+  string latest_gate = 7;
+  repeated logi.protocol.software_manager.AppGateInfo gates = 8;
+  bool has_launch = 9;
+  int32 latest_gate_id = 10;
+  int32 installed_gate_id = 11;
+  string installed_version = 12;
+}
+message AppsList {
+  repeated logi.protocol.software_manager.AppInfo apps = 1;
+}
+message PipelineStatus {
+  map<string, logi.protocol.updates.Status> pipelines = 1;
+  logi.protocol.updates.Status.State aggregate_status = 2;
+  bool needs_reboot = 3;
+  logi.protocol.updates.Status.State job_status = 4;
+}

@@ -1,0 +1,556 @@
+STRING [Path traversal detected] @ 140f46660 :: Path traversal detected: '
+    <- FUN_14020e7e0 @ 14020e7e0
+STRING [Failed to create folder for extracted file] @ 140f46850 :: Failed to create folder for extracted file.
+    <- FUN_140208930 @ 140208930
+STRING [Failed to extract local depots archive] @ 140f48550 :: Failed to extract local depots archive "%s" to "%s" due to %s
+    <- FUN_14021b250 @ 14021b250
+STRING [Failed to extract depot manifest] @ 140f49a68 :: Failed to extract depot manifest from the archive due to %s
+    <- FUN_140239090 @ 140239090
+STRING [Broken symlink in depot] @ 140f4a770 :: Broken symlink in depot: '%s' -> '%s' (target not found)
+    <- FUN_14023f5c0 @ 14023f5c0
+STRING [logi.updater_ipc.protocol] @ 140f58090 :: logi.updater_ipc.protocol.protobuf.Error.short_description
+    <- FUN_1403c62f0 @ 1403c62f0
+    <- FUN_1403c65b0 @ 1403c65b0
+STRING [logi.updater_ipc.protocol] @ 140f580d0 :: logi.updater_ipc.protocol.protobuf.Error.long_description
+    <- FUN_1403c62f0 @ 1403c62f0
+    <- FUN_1403c65b0 @ 1403c65b0
+STRING [logi.updater_ipc.protocol] @ 140f58cf0 :: logi.updater_ipc.protocol.v1.protobuf.EndpointInformation.Name
+    <- FUN_1403c72a0 @ 1403c72a0
+    <- FUN_1403c7710 @ 1403c7710
+STRING [logi.updater_ipc.protocol] @ 140f58d30 :: logi.updater_ipc.protocol.v1.protobuf.EndpointInformation.Identifier
+    <- FUN_1403c72a0 @ 1403c72a0
+    <- FUN_1403c7710 @ 1403c7710
+STRING [logi.updater_ipc.protocol] @ 140f58d80 :: logi.updater_ipc.protocol.v1.protobuf.EndpointInformation.Version
+    <- FUN_1403c72a0 @ 1403c72a0
+    <- FUN_1403c7710 @ 1403c7710
+STRING [logi.updater_ipc.protocol] @ 140f58dd0 :: logi.updater_ipc.protocol.v1.protobuf.EndpointInformation.ExecutablePath
+    <- FUN_1403c72a0 @ 1403c72a0
+    <- FUN_1403c7710 @ 1403c7710
+STRING [logi.updater_ipc.protocol] @ 140f58e20 :: logi.updater_ipc.protocol.v1.protobuf.HelloRequest.Language
+    <- FUN_1403c7ce0 @ 1403c7ce0
+    <- FUN_1403c7f90 @ 1403c7f90
+STRING [logi.updater_ipc.protocol] @ 140f5b460 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.CustomTagsEntry.key
+    <- FUN_1403cef60 @ 1403cef60
+    <- FUN_1403cdfc0 @ 1403cdfc0
+    <- FUN_1403e2c40 @ 1403e2c40
+STRING [logi.updater_ipc.protocol] @ 140f5b4c0 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.CustomTagsEntry.value
+    <- FUN_1403cef60 @ 1403cef60
+    <- FUN_1403cdfc0 @ 1403cdfc0
+    <- FUN_1403e2c40 @ 1403e2c40
+STRING [logi.updater_ipc.protocol] @ 140f5b5e0 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.DepotExecutable.pipeline_uri
+    <- FUN_1403d68c0 @ 1403d68c0
+    <- FUN_1403d6b20 @ 1403d6b20
+STRING [logi.updater_ipc.protocol] @ 140f5b640 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.DepotExecutable.arguments
+    <- FUN_1403d68c0 @ 1403d68c0
+    <- FUN_1403d6b20 @ 1403d6b20
+STRING [logi.updater_ipc.protocol] @ 140f5b6a0 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.Extension.name
+    <- FUN_1403d7060 @ 1403d7060
+    <- FUN_1403d7420 @ 1403d7420
+STRING [logi.updater_ipc.protocol] @ 140f5b6f0 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.Extension.version
+    <- FUN_1403d7060 @ 1403d7060
+    <- FUN_1403d7420 @ 1403d7420
+STRING [logi.updater_ipc.protocol] @ 140f5b750 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.ExtensionState.error
+    <- FUN_1403da840 @ 1403da840
+    <- FUN_1403d7870 @ 1403d7870
+    <- FUN_1403d7ab0 @ 1403d7ab0
+STRING [logi.updater_ipc.protocol] @ 140f5b7b0 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.DepotExtension.depot_name
+    <- FUN_1403da340 @ 1403da340
+    <- FUN_1403d81b0 @ 1403d81b0
+    <- FUN_1403d7ee0 @ 1403d7ee0
+STRING [logi.updater_ipc.protocol] @ 140f5b810 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotExtensions.DepotExtension.extension_name
+    <- FUN_1403da340 @ 1403da340
+    <- FUN_1403d81b0 @ 1403d81b0
+    <- FUN_1403d7ee0 @ 1403d7ee0
+STRING [logi.updater_ipc.protocol] @ 140f5b870 :: logi.updater_ipc.protocol.v1.installer.protobuf.Request.app_tag
+    <- FUN_1403cdc70 @ 1403cdc70
+    <- FUN_1403cde30 @ 1403cde30
+STRING [logi.updater_ipc.protocol] @ 140f5b8b0 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.app_tag
+    <- FUN_1403ceb10 @ 1403ceb10
+    <- FUN_1403cef60 @ 1403cef60
+STRING [logi.updater_ipc.protocol] @ 140f5b900 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.depot_name
+    <- FUN_1403ceb10 @ 1403ceb10
+    <- FUN_1403cef60 @ 1403cef60
+STRING [logi.updater_ipc.protocol] @ 140f5b950 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.build_id
+    <- FUN_1403ceb10 @ 1403ceb10
+    <- FUN_1403cef60 @ 1403cef60
+STRING [logi.updater_ipc.protocol] @ 140f5b9a0 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotRequest.file_groups
+    <- FUN_1403ceb10 @ 1403ceb10
+    <- FUN_1403cef60 @ 1403cef60
+STRING [logi.updater_ipc.protocol] @ 140f5b9f0 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotRequest.app_tag
+    <- FUN_1403d0cc0 @ 1403d0cc0
+    <- FUN_1403d0fb0 @ 1403d0fb0
+STRING [logi.updater_ipc.protocol] @ 140f5ba40 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotRequest.depot_name
+    <- FUN_1403d0cc0 @ 1403d0cc0
+    <- FUN_1403d0fb0 @ 1403d0fb0
+STRING [logi.updater_ipc.protocol] @ 140f5baa0 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotRequest.build_id
+    <- FUN_1403d0cc0 @ 1403d0cc0
+    <- FUN_1403d0fb0 @ 1403d0fb0
+STRING [logi.updater_ipc.protocol] @ 140f5baf0 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotExtensionRequest.app_tag
+    <- FUN_1403d18f0 @ 1403d18f0
+    <- FUN_1403d1be0 @ 1403d1be0
+STRING [logi.updater_ipc.protocol] @ 140f5bb50 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotExtensionRequest.depot_name
+    <- FUN_1403d18f0 @ 1403d18f0
+    <- FUN_1403d1be0 @ 1403d1be0
+STRING [logi.updater_ipc.protocol] @ 140f5bbb0 :: logi.updater_ipc.protocol.v1.installer.protobuf.InstallDepotExtensionRequest.extension_name
+    <- FUN_1403d18f0 @ 1403d18f0
+    <- FUN_1403d1be0 @ 1403d1be0
+STRING [logi.updater_ipc.protocol] @ 140f5bc10 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotExtensionRequest.app_tag
+    <- FUN_1403d2060 @ 1403d2060
+    <- FUN_1403d2350 @ 1403d2350
+STRING [logi.updater_ipc.protocol] @ 140f5bc70 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotExtensionRequest.depot_name
+    <- FUN_1403d2060 @ 1403d2060
+    <- FUN_1403d2350 @ 1403d2350
+STRING [logi.updater_ipc.protocol] @ 140f5bcd0 :: logi.updater_ipc.protocol.v1.installer.protobuf.UninstallDepotExtensionRequest.extension_name
+    <- FUN_1403d2060 @ 1403d2060
+    <- FUN_1403d2350 @ 1403d2350
+STRING [logi.updater_ipc.protocol] @ 140f5bd30 :: logi.updater_ipc.protocol.v1.installer.protobuf.StartProcessesRequest.app_tag
+    <- FUN_1403d2c60 @ 1403d2c60
+    <- FUN_1403d2f10 @ 1403d2f10
+STRING [logi.updater_ipc.protocol] @ 140f5bd80 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionStateRequest.app_tag
+    <- FUN_1403d3ad0 @ 1403d3ad0
+    <- FUN_1403d37e0 @ 1403d37e0
+STRING [logi.updater_ipc.protocol] @ 140f5bde0 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionStateRequest.depot_name
+    <- FUN_1403d3ad0 @ 1403d3ad0
+    <- FUN_1403d37e0 @ 1403d37e0
+STRING [logi.updater_ipc.protocol] @ 140f5be40 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionStateRequest.extension_name
+    <- FUN_1403d3ad0 @ 1403d3ad0
+    <- FUN_1403d37e0 @ 1403d37e0
+STRING [logi.updater_ipc.protocol] @ 140f5bea0 :: logi.updater_ipc.protocol.v1.installer.protobuf.DepotInstallStateEvent.app_tag
+    <- FUN_1403d4500 @ 1403d4500
+    <- FUN_1403d47b0 @ 1403d47b0
+STRING [logi.updater_ipc.protocol] @ 140f5bef0 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionsRequest.app_tag
+    <- FUN_1403d4ba0 @ 1403d4ba0
+    <- FUN_1403d4e90 @ 1403d4e90
+STRING [logi.updater_ipc.protocol] @ 140f5bf50 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionsRequest.depot_name
+    <- FUN_1403d4ba0 @ 1403d4ba0
+    <- FUN_1403d4e90 @ 1403d4e90
+STRING [logi.updater_ipc.protocol] @ 140f5bfb0 :: logi.updater_ipc.protocol.v1.installer.protobuf.GetDepotExtensionsRequest.build_id
+    <- FUN_1403d4ba0 @ 1403d4ba0
+    <- FUN_1403d4e90 @ 1403d4e90
+STRING [logi.updater_ipc.protocol] @ 140f5c010 :: logi.updater_ipc.protocol.v1.installer.protobuf.RunLaunchableByAliasRequest.app_tag
+    <- FUN_1403d5940 @ 1403d5940
+    <- FUN_1403d5c90 @ 1403d5c90
+STRING [logi.updater_ipc.protocol] @ 140f5c070 :: logi.updater_ipc.protocol.v1.installer.protobuf.RunLaunchableByAliasRequest.depot_name
+    <- FUN_1403d5940 @ 1403d5940
+    <- FUN_1403d5c90 @ 1403d5c90
+STRING [logi.updater_ipc.protocol] @ 140f5c0d0 :: logi.updater_ipc.protocol.v1.installer.protobuf.RunLaunchableByAliasRequest.launchable_alias
+    <- FUN_1403d5940 @ 1403d5940
+    <- FUN_1403d5c90 @ 1403d5c90
+STRING [logi.updater_ipc.protocol] @ 140f5c130 :: logi.updater_ipc.protocol.v1.installer.protobuf.RunLaunchableByAliasResponse.error
+    <- FUN_1403d6110 @ 1403d6110
+    <- FUN_1403d63d0 @ 1403d63d0
+STRING [logi.updater_ipc.protocol] @ 140f5fc40 :: logi.updater_ipc.protocol.v1.protobuf.PipelineStatus.PipelinesEntry.key
+    <- FUN_1403eb1c0 @ 1403eb1c0
+    <- FUN_1403ea390 @ 1403ea390
+    <- FUN_140408800 @ 140408800
+STRING [logi.updater_ipc.protocol] @ 140f5fd40 :: logi.updater_ipc.protocol.v1.protobuf.updates.Status.error_message
+    <- FUN_1403f70a0 @ 1403f70a0
+    <- FUN_1403f74a0 @ 1403f74a0
+STRING [logi.updater_ipc.protocol] @ 140f5fd88 :: logi.updater_ipc.protocol.v1.protobuf.Channel.pipeline_host
+    <- FUN_1403e48a0 @ 1403e48a0
+    <- FUN_1403e4c30 @ 1403e4c30
+STRING [logi.updater_ipc.protocol] @ 140f5fdc8 :: logi.updater_ipc.protocol.v1.protobuf.Channel.name
+    <- FUN_1403e48a0 @ 1403e48a0
+    <- FUN_1403e4c30 @ 1403e4c30
+STRING [logi.updater_ipc.protocol] @ 140f5fe00 :: logi.updater_ipc.protocol.v1.protobuf.Channel.password
+    <- FUN_1403e48a0 @ 1403e48a0
+    <- FUN_1403e4c30 @ 1403e4c30
+STRING [logi.updater_ipc.protocol] @ 140f5fe38 :: logi.updater_ipc.protocol.v1.protobuf.Channel.access_groups
+    <- FUN_1403e48a0 @ 1403e48a0
+    <- FUN_1403e4c30 @ 1403e4c30
+STRING [logi.updater_ipc.protocol] @ 140f5fe78 :: logi.updater_ipc.protocol.v1.protobuf.Action.app_tag
+    <- FUN_1403e60a0 @ 1403e60a0
+    <- FUN_1403e5c20 @ 1403e5c20
+STRING [logi.updater_ipc.protocol] @ 140f5feb0 :: logi.updater_ipc.protocol.v1.protobuf.Action.version
+    <- FUN_1403e60a0 @ 1403e60a0
+    <- FUN_1403e5c20 @ 1403e5c20
+STRING [logi.updater_ipc.protocol] @ 140f5fee8 :: logi.updater_ipc.protocol.v1.protobuf.Action.old_version
+    <- FUN_1403e60a0 @ 1403e60a0
+    <- FUN_1403e5c20 @ 1403e5c20
+STRING [logi.updater_ipc.protocol] @ 140f5ff30 :: logi.updater_ipc.protocol.v1.protobuf.ActionsRequest.transaction_id
+    <- FUN_1403e9000 @ 1403e9000
+    <- FUN_1403e8cf0 @ 1403e8cf0
+STRING [logi.updater_ipc.protocol] @ 140f5ff80 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.requirements
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f5ffd0 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.provides
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f60020 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.obsoletes
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f60070 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.conflicts
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f600c0 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.recommends
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f60110 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.suggests
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f60160 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.enhances
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f601b0 :: logi.updater_ipc.protocol.v1.protobuf.AppGateRelationships.supplements
+    <- FUN_1403ed190 @ 1403ed190
+    <- FUN_1403ecbe0 @ 1403ecbe0
+STRING [logi.updater_ipc.protocol] @ 140f601f8 :: logi.updater_ipc.protocol.v1.protobuf.AppGateInfo.app_id
+    <- FUN_1403edb60 @ 1403edb60
+    <- FUN_1403edf20 @ 1403edf20
+STRING [logi.updater_ipc.protocol] @ 140f60240 :: logi.updater_ipc.protocol.v1.protobuf.AppGateInfo.core_depot_name
+    <- FUN_1403edb60 @ 1403edb60
+    <- FUN_1403edf20 @ 1403edf20
+STRING [logi.updater_ipc.protocol] @ 140f60288 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.name
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f602c0 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.app_tag
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f602f8 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.install_location
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f60338 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.installed_gate
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f60378 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.latest_gate
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f603c0 :: logi.updater_ipc.protocol.v1.protobuf.AppInfo.installed_version
+    <- FUN_1403eef00 @ 1403eef00
+    <- FUN_1403ee740 @ 1403ee740
+STRING [logi.updater_ipc.protocol] @ 140f60400 :: logi.updater_ipc.protocol.v1.protobuf.StatusRequest.transaction_id
+    <- FUN_1403ef550 @ 1403ef550
+    <- FUN_1403ef710 @ 1403ef710
+STRING [logi.updater_ipc.protocol] @ 140f60450 :: logi.updater_ipc.protocol.v1.protobuf.AppsRequest.transaction_id
+    <- FUN_1403efa40 @ 1403efa40
+    <- FUN_1403efc00 @ 1403efc00
+STRING [logi.updater_ipc.protocol] @ 140f60498 :: logi.updater_ipc.protocol.v1.protobuf.AppInfoRequest.app_tag
+    <- FUN_1403f0880 @ 1403f0880
+    <- FUN_1403f0620 @ 1403f0620
+STRING [logi.updater_ipc.protocol] @ 140f604e0 :: logi.updater_ipc.protocol.v1.protobuf.AppInfoRequest.transaction_id
+    <- FUN_1403f0880 @ 1403f0880
+    <- FUN_1403f0620 @ 1403f0620
+STRING [logi.updater_ipc.protocol] @ 140f60530 :: logi.updater_ipc.protocol.v1.protobuf.GetChannelInfoRequest.app_tag
+    <- FUN_1403f0c50 @ 1403f0c50
+    <- FUN_1403f0eb0 @ 1403f0eb0
+STRING [logi.updater_ipc.protocol] @ 140f60580 :: logi.updater_ipc.protocol.v1.protobuf.GetChannelInfoRequest.transaction_id
+    <- FUN_1403f0c50 @ 1403f0c50
+    <- FUN_1403f0eb0 @ 1403f0eb0
+STRING [logi.updater_ipc.protocol] @ 140f605d0 :: logi.updater_ipc.protocol.v1.protobuf.IsOSCompatibleRequest.transaction_id
+    <- FUN_1403f1230 @ 1403f1230
+    <- FUN_1403f13f0 @ 1403f13f0
+STRING [logi.updater_ipc.protocol] @ 140f60620 :: logi.updater_ipc.protocol.v1.protobuf.InstallationSizeRequest.transaction_id
+    <- FUN_1403f1be0 @ 1403f1be0
+    <- FUN_1403f1da0 @ 1403f1da0
+STRING [logi.updater_ipc.protocol] @ 140f60670 :: logi.updater_ipc.protocol.v1.protobuf.SetChannelInfoRequest.app_tag
+    <- FUN_1403f29b0 @ 1403f29b0
+    <- FUN_1403f2660 @ 1403f2660
+STRING [logi.updater_ipc.protocol] @ 140f606c0 :: logi.updater_ipc.protocol.v1.protobuf.SetChannelInfoRequest.transaction_id
+    <- FUN_1403f29b0 @ 1403f29b0
+    <- FUN_1403f2660 @ 1403f2660
+STRING [logi.updater_ipc.protocol] @ 140f60710 :: logi.updater_ipc.protocol.v1.protobuf.CheckForUpdatesRequest.transaction_id
+    <- FUN_1403f3050 @ 1403f3050
+    <- FUN_1403f2e10 @ 1403f2e10
+STRING [logi.updater_ipc.protocol] @ 140f60760 :: logi.updater_ipc.protocol.v1.protobuf.ExecuteActionsRequest.transaction_id
+    <- FUN_1403f33b0 @ 1403f33b0
+    <- FUN_1403f3570 @ 1403f3570
+STRING [logi.updater_ipc.protocol] @ 140f607b0 :: logi.updater_ipc.protocol.v1.protobuf.CommandLineEntry.key
+    <- FUN_1403f3d10 @ 1403f3d10
+    <- FUN_1403f3f70 @ 1403f3f70
+STRING [logi.updater_ipc.protocol] @ 140f607f0 :: logi.updater_ipc.protocol.v1.protobuf.CommandLineEntry.values
+    <- FUN_1403f3d10 @ 1403f3d10
+    <- FUN_1403f3f70 @ 1403f3f70
+STRING [logi.updater_ipc.protocol] @ 140f60830 :: logi.updater_ipc.protocol.v1.protobuf.SaveCommandLineRequest.transaction_id
+    <- FUN_1403f4830 @ 1403f4830
+    <- FUN_1403f4540 @ 1403f4540
+STRING [logi.updater_ipc.protocol] @ 140f60880 :: logi.updater_ipc.protocol.v1.protobuf.CancelRequest.transaction_id
+    <- FUN_1403f4c00 @ 1403f4c00
+    <- FUN_1403f4dc0 @ 1403f4dc0
+STRING [logi.updater_ipc.protocol] @ 140f608d0 :: logi.updater_ipc.protocol.v1.protobuf.DownloadRequest.transaction_id
+    <- FUN_1403f5100 @ 1403f5100
+    <- FUN_1403f5350 @ 1403f5350
+STRING [logi.updater_ipc.protocol] @ 140f60918 :: logi.updater_ipc.protocol.v1.protobuf.LaunchRequest.app_tag
+    <- FUN_1403f5960 @ 1403f5960
+    <- FUN_1403f5700 @ 1403f5700
+STRING [logi.updater_ipc.protocol] @ 140f60960 :: logi.updater_ipc.protocol.v1.protobuf.LaunchRequest.transaction_id
+    <- FUN_1403f5960 @ 1403f5960
+    <- FUN_1403f5700 @ 1403f5700
+STRING [logi.updater_ipc.protocol] @ 140f609b0 :: logi.updater_ipc.protocol.v1.protobuf.InstallBlockerRequest.transaction_id
+    <- FUN_1403f5ce0 @ 1403f5ce0
+    <- FUN_1403f5ea0 @ 1403f5ea0
+STRING [logi.updater_ipc.protocol] @ 140f60a00 :: logi.updater_ipc.protocol.v1.protobuf.InstallBlockerResponse.reason
+    <- FUN_1403f6910 @ 1403f6910
+    <- FUN_1403f6b50 @ 1403f6b50
+STRING [logi.updater_ipc.protocol] @ 140f60a50 :: logi.updater_ipc.protocol.v1.protobuf.CreateTransactionResponse.transaction_id
+    <- FUN_1403f7880 @ 1403f7880
+    <- FUN_1403f7a40 @ 1403f7a40
+STRING [logi.updater_ipc.protocol] @ 140f60aa0 :: logi.updater_ipc.protocol.v1.protobuf.CloseTransactionRequest.transaction_id
+    <- FUN_1403e4070 @ 1403e4070
+    <- FUN_1403e4260 @ 1403e4260
+STRING [logi.updater_ipc.protocol] @ 140f60af0 :: logi.updater_ipc.protocol.v1.protobuf.ClaimTransactionRequest.transaction_id
+    <- FUN_1403e5040 @ 1403e5040
+    <- FUN_1403e5230 @ 1403e5230
+STRING [logi.updater_ipc.protocol] @ 140f60b40 :: logi.updater_ipc.protocol.v1.protobuf.HandoffTransactionResponse.handoff_data
+    <- FUN_1403e55e0 @ 1403e55e0
+    <- FUN_1403e57a0 @ 1403e57a0
+STRING [logi.updater_ipc.protocol] @ 140f60b90 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.ProcessInfo.id
+    <- FUN_1403e78b0 @ 1403e78b0
+    <- FUN_1403e7440 @ 1403e7440
+STRING [logi.updater_ipc.protocol] @ 140f60be0 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.ProcessInfo.name
+    <- FUN_1403e78b0 @ 1403e78b0
+    <- FUN_1403e7440 @ 1403e7440
+STRING [logi.updater_ipc.protocol] @ 140f60c30 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.ProcessInfo.version
+    <- FUN_1403e78b0 @ 1403e78b0
+    <- FUN_1403e7440 @ 1403e7440
+STRING [logi.updater_ipc.protocol] @ 140f60c80 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.ProcessInfo.path
+    <- FUN_1403e78b0 @ 1403e78b0
+    <- FUN_1403e7440 @ 1403e7440
+STRING [logi.updater_ipc.protocol] @ 140f60cd0 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.transaction_id
+    <- FUN_1403e80e0 @ 1403e80e0
+    <- FUN_1403e8730 @ 1403e8730
+STRING [logi.updater_ipc.protocol] @ 140f60d20 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.transaction_log_path
+    <- FUN_1403e80e0 @ 1403e80e0
+    <- FUN_1403e8730 @ 1403e8730
+STRING [logi.updater_ipc.protocol] @ 140f60d70 :: logi.updater_ipc.protocol.v1.protobuf.ExecutionStatus.handoff_data_path
+    <- FUN_1403e80e0 @ 1403e80e0
+    <- FUN_1403e8730 @ 1403e8730
+STRING [logi.updater_ipc.protocol] @ 140f60dc0 :: logi.updater_ipc.protocol.v1.protobuf.DirectUninstallRequest.transaction_id
+    <- FUN_1403ea1e0 @ 1403ea1e0
+    <- FUN_1403e9f10 @ 1403e9f10
+STRING [logi.updater_ipc.protocol] @ 140f60e10 :: logi.updater_ipc.protocol.v1.protobuf.DirectUninstallRequest.app_tag
+    <- FUN_1403ea1e0 @ 1403ea1e0
+    <- FUN_1403e9f10 @ 1403e9f10
+STRING [logi.updater_ipc.protocol] @ 140f63ca0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.error_message
+    <- FUN_14040f9d0 @ 14040f9d0
+    <- FUN_14040fdd0 @ 14040fdd0
+STRING [logi.updater_ipc.protocol] @ 140f63cf0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Channel.pipeline_host
+    <- FUN_1404102c0 @ 1404102c0
+    <- FUN_140410640 @ 140410640
+STRING [logi.updater_ipc.protocol] @ 140f63d40 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Channel.name
+    <- FUN_1404102c0 @ 1404102c0
+    <- FUN_140410640 @ 140410640
+STRING [logi.updater_ipc.protocol] @ 140f63d90 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Channel.password
+    <- FUN_1404102c0 @ 1404102c0
+    <- FUN_140410640 @ 140410640
+STRING [logi.updater_ipc.protocol] @ 140f63de0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Channel.access_groups
+    <- FUN_1404102c0 @ 1404102c0
+    <- FUN_140410640 @ 140410640
+STRING [logi.updater_ipc.protocol] @ 140f63e30 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.PeriodicCheck.next_check_due_date
+    <- FUN_140410ba0 @ 140410ba0
+    <- FUN_140410f70 @ 140410f70
+STRING [logi.updater_ipc.protocol] @ 140f63e90 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.PeriodicCheck.next_check_due_timestamp
+    <- FUN_140410ba0 @ 140410ba0
+    <- FUN_140410f70 @ 140410f70
+STRING [logi.updater_ipc.protocol] @ 140f63ef0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Signature.signature
+    <- FUN_14041b0b0 @ 14041b0b0
+    <- FUN_140411360 @ 140411360
+    <- FUN_140411520 @ 140411520
+STRING [logi.updater_ipc.protocol] @ 140f63f40 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info.name
+    <- FUN_1404120c0 @ 1404120c0
+    <- FUN_1404124b0 @ 1404124b0
+STRING [logi.updater_ipc.protocol] @ 140f63f90 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info.local_folder
+    <- FUN_1404120c0 @ 1404120c0
+    <- FUN_1404124b0 @ 1404124b0
+STRING [logi.updater_ipc.protocol] @ 140f63fe0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info.build_id
+    <- FUN_1404120c0 @ 1404120c0
+    <- FUN_1404124b0 @ 1404124b0
+STRING [logi.updater_ipc.protocol] @ 140f64030 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info.files
+    <- FUN_1404120c0 @ 1404120c0
+    <- FUN_1404124b0 @ 1404124b0
+STRING [logi.updater_ipc.protocol] @ 140f64080 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.name
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f640d0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.url
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f64120 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.cipher_suite
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f64170 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.iv
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f641b0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.key
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f64200 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.mac
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f64250 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.local_folder
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f642a0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.files
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f642f0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.depends_on
+    <- FUN_140413510 @ 140413510
+    <- FUN_140412cc0 @ 140412cc0
+STRING [logi.updater_ipc.protocol] @ 140f64340 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Settings.settings_json
+    <- FUN_14041af60 @ 14041af60
+    <- FUN_140413c80 @ 140413c80
+    <- FUN_140413e40 @ 140413e40
+STRING [logi.updater_ipc.protocol] @ 140f64390 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.version
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f643e0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.build_id
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f64430 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.branch
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f64480 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.access_group
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f644d0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.region
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f64520 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository.lockdown_name
+    <- FUN_140414970 @ 140414970
+    <- FUN_140414340 @ 140414340
+STRING [logi.updater_ipc.protocol] @ 140f64570 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.Request.app_tag
+    <- FUN_1404152c0 @ 1404152c0
+    <- FUN_140415480 @ 140415480
+STRING [logi.updater_ipc.protocol] @ 140f645b0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.DownloadDepotRequest.app_tag
+    <- FUN_1404168e0 @ 1404168e0
+    <- FUN_140416680 @ 140416680
+STRING [logi.updater_ipc.protocol] @ 140f64600 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.DownloadDepotRequest.depot_name
+    <- FUN_1404168e0 @ 1404168e0
+    <- FUN_140416680 @ 140416680
+STRING [logi.updater_ipc.protocol] @ 140f64650 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.RemoveDepotRequest.app_tag
+    <- FUN_140417180 @ 140417180
+    <- FUN_1404173e0 @ 1404173e0
+STRING [logi.updater_ipc.protocol] @ 140f646a0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.RemoveDepotRequest.depot_name
+    <- FUN_140417180 @ 140417180
+    <- FUN_1404173e0 @ 1404173e0
+STRING [logi.updater_ipc.protocol] @ 140f646f0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.ModifyStateRequest.app_tag
+    <- FUN_140417c90 @ 140417c90
+    <- FUN_140417f30 @ 140417f30
+STRING [logi.updater_ipc.protocol] @ 140f64740 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.SetChannelRequest.app_tag
+    <- FUN_14040a200 @ 14040a200
+    <- FUN_14040a4b0 @ 14040a4b0
+STRING [logi.updater_ipc.protocol] @ 140f64790 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.SetAutomaticDownloadRequest.app_tag
+    <- FUN_14040a880 @ 14040a880
+    <- FUN_14040aac0 @ 14040aac0
+STRING [logi.updater_ipc.protocol] @ 140f647f0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.BuildIdResponse.build_id
+    <- FUN_14040ae20 @ 14040ae20
+    <- FUN_14040afe0 @ 14040afe0
+STRING [logi.updater_ipc.protocol] @ 140f64840 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.FindDepositoryRequest.app_tag
+    <- FUN_14040b920 @ 14040b920
+    <- FUN_14040bb80 @ 14040bb80
+STRING [logi.updater_ipc.protocol] @ 140f64890 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.FindDepositoryRequest.build_id
+    <- FUN_14040b920 @ 14040b920
+    <- FUN_14040bb80 @ 14040bb80
+STRING [logi.updater_ipc.protocol] @ 140f648e0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.FindDepotRequest.app_tag
+    <- FUN_14040c270 @ 14040c270
+    <- FUN_14040bf80 @ 14040bf80
+STRING [logi.updater_ipc.protocol] @ 140f64930 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.FindDepotRequest.build_id
+    <- FUN_14040c270 @ 14040c270
+    <- FUN_14040bf80 @ 14040bf80
+STRING [logi.updater_ipc.protocol] @ 140f64980 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.FindDepotRequest.depot_name
+    <- FUN_14040c270 @ 14040c270
+    <- FUN_14040bf80 @ 14040bf80
+STRING [logi.updater_ipc.protocol] @ 140f649d0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.IsFileAccessibleRequest.app_tag
+    <- FUN_14040c9e0 @ 14040c9e0
+    <- FUN_14040c6f0 @ 14040c6f0
+STRING [logi.updater_ipc.protocol] @ 140f64a20 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.IsFileAccessibleRequest.depot_name
+    <- FUN_14040c9e0 @ 14040c9e0
+    <- FUN_14040c6f0 @ 14040c6f0
+STRING [logi.updater_ipc.protocol] @ 140f64a80 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.IsFileAccessibleRequest.file_path
+    <- FUN_14040c9e0 @ 14040c9e0
+    <- FUN_14040c6f0 @ 14040c6f0
+STRING [logi.updater_ipc.protocol] @ 140f64ae0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.StatusEvent.app_tag
+    <- FUN_14040d360 @ 14040d360
+    <- FUN_14040d610 @ 14040d610
+STRING [logi.updater_ipc.protocol] @ 140f64b30 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.DepotInfoEvent.app_tag
+    <- FUN_14040da70 @ 14040da70
+    <- FUN_14040dc90 @ 14040dc90
+STRING [logi.updater_ipc.protocol] @ 140f64b80 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.SetApplicationNameRequest.app_tag
+    <- FUN_14040eac0 @ 14040eac0
+    <- FUN_14040ed20 @ 14040ed20
+STRING [logi.updater_ipc.protocol] @ 140f64be0 :: logi.updater_ipc.protocol.v1.pipeline.protobuf.SetApplicationNameRequest.application_name
+    <- FUN_14040eac0 @ 14040eac0
+    <- FUN_14040ed20 @ 14040ed20
+STRING [logi.updater_ipc.protocol] @ 140f65027 :: 2<.logi.updater_ipc.protocol.v1.protobuf.shared_settings.ValueH
+STRING [logi.updater_ipc.protocol] @ 140f6527d :: 2D.logi.updater_ipc.protocol.v1.protobuf.shared_settings.Event.ChangedH
+STRING [logi.updater_ipc.protocol] @ 140f652ff :: 2<.logi.updater_ipc.protocol.v1.protobuf.shared_settings.ValueH
+STRING [logi.updater_ipc.protocol] @ 140f65af0 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.Timestamp.who
+    <- FUN_1404294f0 @ 1404294f0
+    <- FUN_140424970 @ 140424970
+    <- FUN_140424ba0 @ 140424ba0
+STRING [logi.updater_ipc.protocol] @ 140f65b40 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.Value.string_value
+    <- FUN_1404252a0 @ 1404252a0
+    <- FUN_140424f80 @ 140424f80
+STRING [logi.updater_ipc.protocol] @ 140f65b90 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.GetRequest.key
+    <- FUN_140425a20 @ 140425a20
+    <- FUN_140425750 @ 140425750
+STRING [logi.updater_ipc.protocol] @ 140f65be0 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.GetRequest.user
+    <- FUN_140425a20 @ 140425a20
+    <- FUN_140425750 @ 140425750
+STRING [logi.updater_ipc.protocol] @ 140f65c30 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.SetRequest.key
+    <- FUN_140426810 @ 140426810
+    <- FUN_1404264f0 @ 1404264f0
+STRING [logi.updater_ipc.protocol] @ 140f65c80 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.SetRequest.user
+    <- FUN_140426810 @ 140426810
+    <- FUN_1404264f0 @ 1404264f0
+STRING [logi.updater_ipc.protocol] @ 140f65cd0 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.DeleteRequest.key
+    <- FUN_140427110 @ 140427110
+    <- FUN_1404273e0 @ 1404273e0
+STRING [logi.updater_ipc.protocol] @ 140f65d20 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.DeleteRequest.user
+    <- FUN_140427110 @ 140427110
+    <- FUN_1404273e0 @ 1404273e0
+STRING [logi.updater_ipc.protocol] @ 140f65d70 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.Event.Changed.key
+    <- FUN_140428130 @ 140428130
+    <- FUN_140427e10 @ 140427e10
+STRING [logi.updater_ipc.protocol] @ 140f65dc0 :: logi.updater_ipc.protocol.v1.protobuf.shared_settings.Event.Changed.user
+    <- FUN_140428130 @ 140428130
+    <- FUN_140427e10 @ 140427e10
+STRING [Blocked unsigned DLL] @ 1410485c0 :: Blocked unsigned DLL: %s
+    <- FUN_140a5d100 @ 140a5d100
+STRING [Cannot extract unknown file] @ 14104a120 :: Cannot extract unknown file!
+    <- FUN_140a70310 @ 140a70310
+STRING [Connection rejected] @ 1410e6728 :: Connection rejected
+    <- FUN_140e3b3e0 @ 140e3b3e0
+
+(scanned 318428 defined data items)
+
+IMPORT GetTokenInformation @ EXTERNAL:00000050
+    <- FUN_140a53080 @ 140a53080
+    <- FUN_140a3f1f0 @ 140a3f1f0
+    <- FUN_140a34fb0 @ 140a34fb0
+    <- FUN_140a4e360 @ 140a4e360
+IMPORT OpenProcessToken @ EXTERNAL:00000055
+    <- FUN_140a53080 @ 140a53080
+    <- FUN_140a4edb0 @ 140a4edb0
+    <- FUN_140a31480 @ 140a31480
+    <- FUN_140a34fb0 @ 140a34fb0
+    <- FUN_140a4e360 @ 140a4e360
+IMPORT CreateProcessAsUserW @ EXTERNAL:00000056
+    <- FUN_140a31480 @ 140a31480
+    <- FUN_140a320f0 @ 140a320f0
+IMPORT WinVerifyTrust @ EXTERNAL:0000009c
+    <- WinVerifyTrust @ 140c280de
+IMPORT GetNamedPipeClientProcessId @ EXTERNAL:000000cd
+    <- FUN_140c1b1f0 @ 140c1b1f0
+IMPORT CreateSymbolicLinkW @ EXTERNAL:000000dd
+    <- Create_symlink @ 140dfdc08
+IMPORT DeviceIoControl @ EXTERNAL:0000010d
+    <- FUN_140dff30c @ 140dff30c
+    <- FUN_140dfecf0 @ 140dfecf0
+    <- FUN_140a89870 @ 140a89870
+    <- FUN_140a51da0 @ 140a51da0
+    <- FUN_140a513c0 @ 140a513c0
+    <- FUN_140a527e0 @ 140a527e0
+    <- FUN_140a8a740 @ 140a8a740
+IMPORT QueryFullProcessImageNameW @ EXTERNAL:00000182
+    <- FUN_1401505f0 @ 1401505f0
+IMPORT CreateProcessW @ EXTERNAL:000001b7
+    <- FUN_1401e5200 @ 1401e5200
+    <- FUN_140a30400 @ 140a30400
+IMPORT CreateNamedPipeW @ EXTERNAL:000001cc
+    <- FUN_1401f7660 @ 1401f7660
+IMPORT WinVerifyTrust @ 140c280de
+    <- FUN_140a5ea70 @ 140a5ea70
+    <- FUN_140c24560 @ 140c24560
+    <- FUN_140a5d4d0 @ 140a5d4d0
+    <- FUN_140c24d10 @ 140c24d10
+
+DECOMPILING 174 functions

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package logi.protocol.manifest;
+import "logi/common_protocol/installer.proto";
+
+message Resource {
+  string key = 1;
+  string src = 2;
+}
+message DeviceResource {
+  string model_id = 1;
+  repeated logi.protocol.manifest.Resource resources = 2;
+}
+message ReleaseNotes {
+  string content = 1;
+}
+message Manifest {
+  logi.protocol.installer.Installer installer = 1;
+  repeated logi.protocol.manifest.DeviceResource devices = 2;
+  repeated logi.protocol.manifest.Resource resources = 3;
+  logi.protocol.manifest.ReleaseNotes release_notes = 4;
+}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+package logi.protocol.inputs;
+import "logi/protocol/devices.proto";
+import "logi/protocol/keyboard.proto";
+import "logi/protocol/slots.proto";
+
+message Input {
+  enum Type {
+    INVALID_TYPE = 0;
+    BUTTON = 1;
+    AXIS = 2;
+    SCROLL = 3;
+    VIRTUAL_BUTTON = 4;
+  }
+  enum State {
+    INVALID_STATE = 0;
+    PRESSED = 1;
+    RELEASED = 2;
+    CLICKED = 3;
+  }
+  message Event {
+    logi.protocol.devices.Device.Info.Basic device_info = 1;
+    logi.protocol.inputs.Input input = 2;
+  }
+  message Masking {
+    message Button {
+      string slot_id = 1;
+      uint32 mask_flag = 2;
+      uint32 index = 3;
+    }
+    message Scroll {
+      string slot_id = 1;
+      bool masked = 2;
+    }
+    repeated logi.protocol.inputs.Input.Masking.Button button_list = 1;
+    repeated logi.protocol.inputs.Input.Masking.Scroll scroll_list = 2;
+  }
+  logi.protocol.inputs.Input.Type type = 1;
+  uint32 id = 2;
+  logi.protocol.inputs.Input.State state = 3;
+  uint32 value = 4;
+  logi.protocol.keyboard.Keyboard.GKeyLayout gkey_layout = 6;
+}

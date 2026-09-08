@@ -1,0 +1,57 @@
+syntax = "proto3";
+package logi.updater_ipc.protocol.v1.protobuf.shared_settings;
+
+enum Status {
+  Ok = 0;
+  NotFound = 1;
+  ReadOnly = 2;
+  BadType = 3;
+  Failed = 255;
+}
+message Timestamp {
+  uint32 when = 1;
+  string who = 2;
+}
+message Value {
+  bool bool_value = 1;
+  int64 int64_value = 2;
+  double double_value = 3;
+  string string_value = 4;
+}
+message GetRequest {
+  string key = 1;
+  string user = 2;
+  bool is_global = 3;
+}
+message GetResponse {
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Status status = 1;
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Value value = 2;
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Timestamp last_set = 3;
+}
+message SetRequest {
+  string key = 1;
+  string user = 2;
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Value value = 3;
+  bool is_global = 4;
+}
+message SetResponse {
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Status status = 1;
+}
+message DeleteRequest {
+  string key = 1;
+  string user = 2;
+  bool is_global = 3;
+}
+message DeleteResponse {
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Status status = 1;
+}
+message Event {
+  message Changed {
+    string key = 1;
+    string user = 2;
+    logi.updater_ipc.protocol.v1.protobuf.shared_settings.Value old_value = 3;
+    logi.updater_ipc.protocol.v1.protobuf.shared_settings.Value new_value = 4;
+    logi.updater_ipc.protocol.v1.protobuf.shared_settings.Timestamp last_set = 5;
+  }
+  logi.updater_ipc.protocol.v1.protobuf.shared_settings.Event.Changed changed = 1;
+}

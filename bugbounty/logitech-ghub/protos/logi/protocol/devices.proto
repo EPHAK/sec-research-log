@@ -1,0 +1,838 @@
+syntax = "proto3";
+package logi.protocol.devices;
+import "logi/protocol/audio.proto";
+import "logi/protocol/analog_preset.proto";
+import "logi/protocol/axis.proto";
+import "logi/protocol/display.proto";
+import "logi/protocol/firmware_lighting.proto";
+import "logi/protocol/illumination_light.proto";
+import "logi/protocol/input_preset.proto";
+import "logi/protocol/keyboard.proto";
+import "logi/common_protocol/lighting_support.proto";
+import "logi/protocol/mouse.proto";
+import "logi/protocol/notifications.proto";
+import "logi/protocol/rs_shifter_handbrake.proto";
+import "logi/protocol/slots.proto";
+import "logi/protocol/swappable_switches.proto";
+import "logi/common_protocol/util.proto";
+import "logi/protocol/webcam.proto";
+import "logi/protocol/wireless.proto";
+import "logi/protocol/wheel.proto";
+import "logi/protocol/unified_profiles.proto";
+import "logi/protocol/report_rates.proto";
+import "logi/protocol/gear_stick.proto";
+import "logi/protocol/scroll_wheel.proto";
+
+message Device {
+  enum DisplayConnection {
+    INVALID_DISPLAY_CONNECTION = 0;
+    VIRTUAL = 1;
+    ACCESSORY = 2;
+    USB = 3;
+    WIRELESS = 4;
+    LIGHTSPEED = 5;
+    BLUETOOTH = 6;
+    BLE = 7;
+  }
+  enum Type {
+    INVALID_TYPE = 0;
+    KEYBOARD = 1;
+    MOUSE = 2;
+    HEADSET = 3;
+    STEERING_WHEEL = 4;
+    PEDALS = 5;
+    HID_DEVICE = 6;
+    CHARGE_PAD = 7;
+    SPEAKER = 8;
+    CAMERA = 9;
+    MICROPHONE = 10;
+    ILLUMINATION_LIGHT = 11;
+    EARBUDS = 12;
+    ADAPTER = 13;
+    COMBO = 14;
+    RS_SHIFTER_HANDBRAKE = 15;
+    H_SHIFTER = 16;
+    AUDIO_BASE_STATION = 17;
+  }
+  enum State {
+    INVALID_STATE = 0;
+    ABSENT = 1;
+    PRESENT = 2;
+    NOT_CONNECTED = 3;
+    PENDING = 4;
+    LOADING_RESOURCES = 5;
+    REQUIRES_ASSISTANCE = 6;
+    BLOCKED = 7;
+    REQUIRES_UPDATE = 8;
+    INITIALIZING = 9;
+    ACTIVE = 10;
+  }
+  message Interface {
+    enum Type {
+      INVALID_TYPE = 0;
+      DEVIO = 1;
+      HIDIO = 2;
+      UVC = 3;
+      AUDIO = 4;
+    }
+    enum Connection {
+      INVALID_CONNECTION = 0;
+      VIRTUAL = 1;
+      ACCESSORY = 2;
+      USB = 3;
+      WIRELESS = 4;
+      BLUETOOTH = 5;
+      BLE = 6;
+    }
+    message Status {
+      bool has_features = 1;
+      bool connected = 2;
+      bool is_bootloader = 3;
+      bool blocked = 4;
+      bool ready = 5;
+      bool active = 6;
+    }
+    message Firmware_Info {
+      string interface_id = 1;
+      string firmware_version = 2;
+      string firmware_name = 3;
+      string firmware_friendly_name = 4;
+      uint32 firmware_revision = 5;
+      uint32 hardware_revision = 6;
+    }
+    message Data {
+      logi.protocol.devices.Device.Interface.Type type = 1;
+      string id = 2;
+      uint32 pid = 3;
+      uint32 model_id = 4;
+      uint32 extended_model = 5;
+      string serial_number = 6;
+      string path = 7;
+      string container_id = 8;
+      logi.protocol.devices.Device.Type device_type = 9;
+      string device_name = 10;
+      logi.protocol.keyboard.Keyboard.Layout keyboard_layout = 11;
+      string firmware_version = 12;
+      string firmware_name = 13;
+      uint32 firmware_revision = 14;
+      uint32 hardware_revision = 15;
+      string unit_id = 16;
+      logi.protocol.devices.Subdevice.Identifier subdevice = 17;
+      logi.protocol.devices.SubComponent.Info subcomponent = 18;
+      map<string, string> fw_entities = 19;
+      logi.protocol.devices.Device.Interface.Connection connection_type = 20;
+      bool has_onboard_mode = 30;
+      string parent_path = 31;
+      string hashed_serial_number = 32;
+      string hashed_unit_id = 33;
+    }
+    message State {
+      message List {
+        logi.protocol.devices.Device.Info.Basic basic_info = 1;
+        repeated logi.protocol.devices.Device.Interface.State interface_states = 2;
+      }
+      logi.protocol.devices.Device.Interface.Status status = 1;
+      logi.protocol.devices.Device.Interface.Data data = 2;
+    }
+  }
+  message Info {
+    message Basic {
+      string id = 1;
+      logi.protocol.devices.Device.Type device_type = 2;
+      string device_model = 3;
+      string slot_prefix = 4;
+      uint32 pid = 5;
+      string device_signature = 6;
+      bool supports_individuality = 7;
+      bool individual_mode = 8;
+      bool onboard_mode = 9;
+      string parent_id = 10;
+      logi.protocol.slots.Slot.Format default_slot_format = 11;
+      bool is_subdevice = 12;
+    }
+    message List {
+      repeated logi.protocol.devices.Device.Info device_infos = 1;
+    }
+    message ContainerId {
+      logi.protocol.devices.Device.Info.Basic device_info = 1;
+      string container_id = 2;
+    }
+    string id = 1;
+    uint32 pid = 2;
+    repeated logi.protocol.devices.Device.Interface.Firmware_Info fw_info = 3;
+    bool is_subdevice = 4;
+    string parent_id = 5;
+    logi.protocol.devices.Device.State state = 6;
+    bool onboard_mode = 7;
+    bool individual_mode = 8;
+    bool resources_available = 9;
+    logi.protocol.devices.Device.Interface.Connection connection_type = 11;
+    bool has_wireless_interface = 12;
+    logi.protocol.devices.Device.DisplayConnection display_connection_type = 13;
+    logi.protocol.devices.Device.Type device_type = 20;
+    string device_family = 21;
+    string device_model = 22;
+    string device_base_model = 23;
+    string display_name = 24;
+    string extended_display_name = 25;
+    string slot_prefix = 26;
+    string thumbnail = 27;
+    string string_package = 28;
+    logi.protocol.devices.AssetsPackages assets_packages = 29;
+    uint32 device_ext = 30;
+    string device_unit_id = 31;
+    string device_signature = 32;
+    string given_name = 40;
+    logi.protocol.devices.Capabilities capabilities = 50;
+    repeated logi.protocol.devices.Device.Interface.Data active_interfaces = 60;
+    map<string, logi.protocol.slots.Slot> slots = 61;
+    map<string, logi.protocol.unified_profiles.Configuration.Header> configurations = 62;
+    string path = 70;
+    string parent_path = 71;
+  }
+  message Known {
+    message List {
+      repeated logi.protocol.devices.Device.Known known_list = 1;
+    }
+    string model_id = 1;
+    logi.protocol.devices.Device.Type type = 2;
+    uint32 device_ext = 3;
+    string serial_number = 4;
+    uint64 timestamp = 5;
+    string signature = 6;
+    bool reported_to_analytics = 7;
+    string base_model_id = 8;
+    uint64 first_seen_timestamp = 9;
+  }
+}
+message Receiver {
+  enum State {
+    INVALID_STATE = 0;
+    ABSENT = 1;
+    PRESENT = 2;
+    PENDING = 3;
+    LOADING_RESOURCES = 4;
+    REQUIRES_UPDATE = 5;
+    INITIALIZING = 6;
+    ACTIVE = 7;
+  }
+  enum Type {
+    INVALID_TYPE = 0;
+    LEGACY = 1;
+    LS1 = 2;
+    LS2 = 3;
+    LS_HYBRID = 4;
+    LSX = 5;
+  }
+  message Interface {
+    enum Type {
+      INVALID_TYPE = 0;
+      DEVIO = 1;
+      HIDIO = 2;
+      AUDIO = 3;
+    }
+    message Status {
+      bool has_features = 1;
+      bool has_devices = 2;
+      bool is_bootloader = 3;
+      bool ready = 4;
+      bool active = 5;
+    }
+    message Data {
+      logi.protocol.devices.Receiver.Interface.Type type = 1;
+      string id = 2;
+      uint32 pid = 3;
+      uint32 extended_model = 4;
+      string serial_number = 5;
+      string path = 6;
+      string container_id = 7;
+      string firmware_version = 8;
+      uint32 pairing_slots = 9;
+      map<string, string> fw_entities = 10;
+    }
+    message State {
+      message List {
+        logi.protocol.devices.Receiver.Info.Basic basic_info = 1;
+        repeated logi.protocol.devices.Receiver.Interface.State interface_states = 2;
+      }
+      logi.protocol.devices.Receiver.Interface.Status status = 1;
+      logi.protocol.devices.Receiver.Interface.Data data = 2;
+    }
+  }
+  message Info {
+    message Basic {
+      string id = 1;
+      logi.protocol.devices.Receiver.Type receiver_type = 2;
+      logi.protocol.devices.Device.Type device_type = 3;
+      string receiver_model = 4;
+      uint32 pid = 5;
+    }
+    message List {
+      repeated logi.protocol.devices.Receiver.Info receiver_infos = 1;
+    }
+    string id = 1;
+    uint32 pid = 2;
+    logi.protocol.devices.Receiver.State state = 3;
+    uint32 pairing_slots = 4;
+    logi.protocol.devices.Device.Type device_type = 5;
+    logi.protocol.devices.Receiver.Type receiver_type = 20;
+    string receiver_model = 21;
+    string display_name = 22;
+    logi.protocol.devices.Receiver.Metadata metadata = 30;
+    repeated logi.protocol.devices.Receiver.Interface.Data active_interfaces = 40;
+    map<uint32, string> paired_devices = 41;
+    map<uint32, string> component_devices = 42;
+  }
+  message Metadata {
+    bool restricted_devices = 1;
+    bool is_chargepad = 2;
+    bool supports_2khz = 3;
+  }
+}
+message Blockers {
+  message Blocker {
+    enum Type {
+      BLOCKER_NONE = 0;
+      REQUIRES_REBOOT = 1;
+      MISSING_DRIVER = 2;
+      MISSING_APO = 3;
+      DISABLED_APO = 4;
+      DEVICE_DISABLED = 5;
+      DEVICE_QUARANTINED = 6;
+      MISSING_INTERFACE = 7;
+      MULTIHOST_CONTROL = 8;
+      ONBOARDING = 9;
+      UNSUPPORTED_ARCH = 10;
+      UNDETERMINED = -1;
+    }
+    logi.protocol.devices.Blockers.Blocker.Type type = 1;
+    bool recoverable = 2;
+  }
+  message DeviceBlocker {
+    string id = 1;
+    logi.protocol.devices.Blockers.Blocker blocker = 2;
+  }
+  repeated logi.protocol.devices.Blockers.DeviceBlocker device_blockers = 1;
+}
+message Driver {
+  enum Status {
+    INVALID = 0;
+    LOADED = 1;
+    APPROVED = 2;
+    BLOCKED = 3;
+    REBOOT_NEEDED = 4;
+    CONSENT_UNKNOWN = 5;
+  }
+  message Info {
+    string id = 1;
+    logi.protocol.devices.Driver driver = 2;
+  }
+  repeated string windows_ids = 1;
+  repeated string osx_ids = 2;
+  logi.protocol.devices.Driver.Status status = 3;
+  logi.protocol.devices.Device.Interface.Type associated_interface_type = 4;
+  bool associated_interface_ready = 5;
+}
+message CrossDeviceSupport {
+  message ExtendedDisplayNames {
+    repeated string extended_display_names = 1;
+  }
+  map<string, logi.protocol.devices.CrossDeviceSupport.ExtendedDisplayNames> use_presets_from = 1;
+}
+message DeviceImageOverlay {
+  enum Category {
+    CATEGORY_INVALID = 0;
+    HEADBAND = 1;
+  }
+  message Skin {
+    string display_name = 1;
+    string resource_key = 2;
+  }
+  message LayerInfo {
+    logi.protocol.devices.DeviceImageOverlay.Category category = 1;
+    repeated logi.protocol.devices.DeviceImageOverlay.Skin skins = 2;
+  }
+  message info {
+    repeated logi.protocol.devices.DeviceImageOverlay.LayerInfo layer_infos = 1;
+  }
+  message Setting {
+    message LayerSetting {
+      logi.protocol.devices.DeviceImageOverlay.Category category = 1;
+      uint32 skin_index = 2;
+    }
+    repeated logi.protocol.devices.DeviceImageOverlay.Setting.LayerSetting layer_settings = 1;
+  }
+}
+message AssetsPackages {
+  string analog_onboarding_package = 1;
+}
+message Capabilities {
+  enum ModeMatchingAlgorithm {
+    DEFAULT = 0;
+    MODE_AS_DIFFERENT_DEVICE = 1;
+    STRICT = 2;
+  }
+  message OnboardProfiles {
+    bool disable_profile_naming = 1;
+    bool profiles_always_active = 2;
+    bool supports_onboard_mode = 3;
+    bool use_file_system = 4;
+    bool prioritize_software_defaults = 5;
+  }
+  message MState {
+    message Support {
+      uint32 count = 1;
+      uint32 time_out = 2;
+    }
+  }
+  message MaskedZone {
+    string id = 1;
+    repeated string slot_ids = 2;
+    string display_icon_key = 3;
+    string render_icon_key = 4;
+    bool enabled = 5;
+  }
+  message MaskedZones {
+    repeated logi.protocol.devices.Capabilities.MaskedZone zones = 1;
+  }
+  message ReceiverPairing {
+    enum Action {
+      ACTION_INVALID = 0;
+      ACTION_POWER_CYCLE = 1;
+      ACTION_LONG_PRESS_LIGHTSPEED = 2;
+      ACTION_LONG_PRESS_CONNECTIVITY = 3;
+    }
+    logi.protocol.devices.Receiver.Type receiver_type = 1;
+    uint32 receiver_pid = 2;
+    logi.protocol.devices.Capabilities.ReceiverPairing.Action pairing_action = 3;
+    bool has_force_pairing = 4;
+  }
+  message MultiInterfaceDfuName {
+    message Component {
+      string id = 1;
+      string dfu_display_key = 2;
+    }
+    repeated logi.protocol.devices.Capabilities.MultiInterfaceDfuName.Component components = 1;
+  }
+  message AnimationCardOverloads {
+    message Border {
+      message LinearGradientColor {
+        string start = 1;
+        string stop = 2;
+      }
+      logi.protocol.devices.Capabilities.AnimationCardOverloads.Border.LinearGradientColor linear_gradient = 1;
+    }
+    bool supports_animation = 1;
+    bool supports_see_more = 2;
+    logi.protocol.devices.Capabilities.AnimationCardOverloads.Border animation_border = 3;
+    string display_name = 4;
+    string promotionalName = 5;
+  }
+  logi.protocol.audio.Capabilities audio = 1;
+  logi.protocol.devices.Lighting.Support lighting_support = 2;
+  bool sleep_timer = 3;
+  logi.protocol.devices.Hidio hidio = 4;
+  logi.protocol.devices.Capabilities.MState.Support mstate_support = 5;
+  logi.protocol.devices.Capabilities.MaskedZones maskable_zones = 6;
+  logi.protocol.devices.HidioControls report_hid_controls = 7;
+  bool fn_inversion = 8;
+  bool present_splash_screen = 9;
+  bool customizable_color = 10;
+  bool wireless_report_rate = 11;
+  logi.protocol.devices.PlatformDisabled platform_disabled = 12;
+  logi.protocol.webcam.Webcam.Capabilities webcam = 13;
+  logi.protocol.mouse.Dpi.Indicator.Led dpi_indicator_led = 14;
+  logi.protocol.mouse.Dpi.Info dpi_info_override = 15;
+  logi.protocol.mouse.Dpi.Table dpi_table_override = 16;
+  bool hybrid_engine = 17;
+  bool advanced_sleep_timer = 18;
+  logi.protocol.devices.Capabilities.OnboardProfiles onboard_profiles = 19;
+  bool angle_snapping = 20;
+  bool exclude_g_shift = 21;
+  logi.protocol.util.Number onboard_cycle_id = 22;
+  bool host_removal_support = 23;
+  logi.protocol.devices.ScrollControls scroll_controls = 24;
+  logi.protocol.devices.MouseButtonControls mouse_button_controls = 25;
+  logi.protocol.devices.GamingAttachments gaming_attachments = 26;
+  logi.protocol.util.RangeInt operating_range = 27;
+  logi.protocol.devices.HidioControls pedal_hid_controls = 28;
+  bool host_infos = 29;
+  logi.protocol.keyboard.Keyboard.GKeyLayout gkey_layout = 30;
+  bool has_battery_status = 31;
+  bool power_off_timer = 32;
+  logi.protocol.wheel.TrueForceSettings trueforce = 33;
+  logi.protocol.report_rates.ReportRates report_rates_override = 34;
+  bool requires_backup_for_dfu = 35;
+  logi.protocol.notifications.Support notification_support = 36;
+  bool unified_battery = 37;
+  bool dpi_lighting = 38;
+  bool has_global_damping = 39;
+  bool non_interactive = 40;
+  logi.protocol.devices.Capabilities.ReceiverPairing receiver_pairing = 41;
+  bool chargepad_compatible = 42;
+  logi.protocol.illumination_light.ColorRange illumination_light_color_range = 43;
+  bool individuality = 44;
+  logi.protocol.slots.Slot.Format default_slot_format = 45;
+  logi.protocol.devices.Subdevice.DeviceAssociations subdevices_types = 46;
+  bool fn_toggle = 47;
+  logi.protocol.util.RangeFloat torque_limit = 48;
+  logi.protocol.wheel.OnboardRPMPatterns onboard_rpm_patterns = 49;
+  bool is_full_hidpp_wheel = 50;
+  bool has_configuration_profiles = 51;
+  bool disable_center_spring = 52;
+  logi.protocol.wheel.FfbFilter ffb_filter = 53;
+  logi.protocol.axis.Capabilities axes = 54;
+  bool has_onboard_device_name = 55;
+  bool system_tray_support = 56;
+  logi.protocol.util.RangeInt brake_force_value = 57;
+  logi.protocol.devices.Capabilities.MultiInterfaceDfuName multi_interface_dfu_name = 58;
+  logi.protocol.wireless.MultiBatterySupport multi_battery_support = 59;
+  logi.protocol.wireless.Capabilities wireless_support = 60;
+  logi.protocol.input_preset.Capabilities input_support = 61;
+  bool cid_based_game_mode_support = 62;
+  bool depot_not_required = 63;
+  bool led_brightness = 64;
+  bool auto_sleep = 65;
+  bool has_factory_reset = 66;
+  logi.protocol.mouse.Dpi.Tuning.CalibrationLimits dpi_calibration_limits = 67;
+  logi.protocol.wheel.Capabilities wheel = 68;
+  bool disable_lighting_view_menu = 69;
+  uint32 dpi_version = 70;
+  bool has_wired_report_rate = 71;
+  logi.protocol.keyboard.Keyboard.KeyboardSize keyboard_size = 72;
+  uint32 ui_theme_version = 73;
+  logi.protocol.webcam.Webcam.AllCapabilities webcam_support = 74;
+  logi.protocol.analog_preset.Capabilities analog_support = 75;
+  logi.protocol.devices.CrossDeviceSupport cross_device_support = 79;
+  logi.protocol.rs_shifter_handbrake.Capabilities rs_shifter_handbrake_support = 80;
+  uint32 device_name_max_length = 81;
+  bool has_battery_eco_mode = 82;
+  bool has_total_usage_time = 83;
+  logi.protocol.devices.Capabilities.AnimationCardOverloads animation_card_overloads = 84;
+  bool iprofile_datasync_support = 85;
+  logi.protocol.devices.DeviceImageOverlay.info device_image_overlay = 86;
+  logi.protocol.devices.Capabilities.ModeMatchingAlgorithm mode_matching_algorithm = 87;
+  bool use_real_soc = 88;
+  bool has_eu_power_mode_control = 89;
+  bool has_bunny_hopping_support = 90;
+  bool has_spatial_sound = 91;
+  bool has_performance_report_rate = 92;
+  bool has_rename = 93;
+  logi.protocol.display.Capabilities display = 94;
+  uint32 device_settings_version = 95;
+  bool has_onboard_edit_support = 96;
+  bool has_custom_device_name_style = 97;
+  logi.protocol.swappable_switches.Capabilities swappable_switches_support = 98;
+  bool has_keep_alive_support = 99;
+  bool has_bool_states = 100;
+  logi.protocol.gear_stick.Capabilities mapping = 101;
+  uint32 coachmarks_theme_version = 102;
+  bool has_no_fn_keys = 103;
+  logi.protocol.scroll_wheel.ScrollWheelSupport scroll_wheel_support = 104;
+}
+message OnboardMode {
+  bool enabled = 1;
+}
+message PersistentData {
+  message PreferredDeviceImage {
+    string thumb_key = 1;
+    string image_key = 2;
+  }
+  logi.protocol.devices.PersistentData.PreferredDeviceImage preferred_image = 1;
+  bool known_device = 2;
+  logi.protocol.keyboard.FnInverted fn_inversion = 3;
+  logi.protocol.webcam.Webcam.BroadcastMode broadcast_mode = 4;
+  logi.protocol.devices.ChargeControl charge_control = 5;
+  logi.protocol.devices.OnboardMode onboard_mode = 6;
+  logi.protocol.mouse.AngleSnapping angle_snapping = 7;
+  logi.protocol.util.BoolValue device_splash_shown = 8;
+  logi.protocol.util.BoolValue mic_functional_lighting = 9;
+  logi.protocol.util.BoolValue fkc_onboarding_shown = 10;
+  logi.protocol.util.BoolValue dynamic_switches_onboarding_shown = 11;
+}
+message MState {
+  enum Mode {
+    INVALID = 0;
+  }
+  enum State {
+    INVALID_STATE = 0;
+    PRESSED = 1;
+    RELEASED = 2;
+    CLICKED = 3;
+  }
+  message Changed {
+    logi.protocol.devices.Device.Info.Basic device = 1;
+    logi.protocol.devices.MState previous_mstate = 2;
+    logi.protocol.devices.MState current_mstate = 3;
+  }
+  uint32 mode = 1;
+  logi.protocol.devices.MState.State state = 2;
+}
+message HidioMState {
+  logi.protocol.devices.MState mstate = 1;
+  string interface_id = 2;
+  repeated logi.protocol.devices.HidioControl selection_set = 3;
+}
+message HidioControl {
+  string interface_id = 1;
+  uint32 page = 2;
+  uint32 usage = 3;
+}
+message HidioPov {
+  string interface_id = 1;
+  uint32 axis_page = 2;
+  uint32 axis_usage = 3;
+  uint32 north_button_page = 4;
+  uint32 north_button_usage = 5;
+  uint32 south_button_page = 6;
+  uint32 south_button_usage = 7;
+  uint32 east_button_page = 8;
+  uint32 east_button_usage = 9;
+  uint32 west_button_page = 10;
+  uint32 west_button_usage = 11;
+}
+message Hidio {
+  repeated logi.protocol.devices.HidioControl disabled_controls = 1;
+  repeated logi.protocol.devices.HidioMState mstates = 2;
+  repeated logi.protocol.devices.HidioPov extra_povs = 3;
+}
+message HidioControls {
+  message HidUsages {
+    uint32 usage = 1;
+    uint32 button = 2;
+  }
+  message HidPage {
+    uint32 page = 1;
+    repeated logi.protocol.devices.HidioControls.HidUsages usages = 2;
+  }
+  repeated logi.protocol.devices.HidioControls.HidPage pages = 1;
+}
+message ScrollControls {
+  uint32 scroll_up = 1;
+  uint32 scroll_down = 2;
+}
+message MouseButtonControls {
+  uint32 button_count = 1;
+}
+message ChargeControl {
+  bool value = 1;
+}
+message PlatformDisabled {
+  bool windows = 1;
+  bool osx = 2;
+}
+message SleepTimer {
+  uint32 shutdown = 1;
+  uint32 shallow = 2;
+  uint32 deep = 3;
+}
+message SleepState {
+  enum State {
+    ACTIVE = 0;
+    SHALLOW_SLEEP = 1;
+    DEEP_SLEEP = 2;
+    SHUTDOWN = 3;
+  }
+  logi.protocol.devices.SleepState.State state = 1;
+}
+message DevicePair {
+  string receiver_id = 1;
+  string paired_id = 2;
+}
+message KnownDevices {
+  repeated string device_model_ids = 1;
+}
+message BinaryData {
+  bytes value = 1;
+}
+message HIDPPFeature {
+  uint32 id = 1;
+  uint32 version = 2;
+}
+message Fn {
+  bool on = 1;
+}
+message GShift {
+  enum Source {
+    UNDEFINED = 0;
+    HOST = 1;
+    DEVICE = 2;
+  }
+  bool on = 1;
+  logi.protocol.devices.GShift.Source source = 2;
+  string device_id = 3;
+}
+message Resource {
+  message List {
+    repeated logi.protocol.devices.Resource resources = 1;
+  }
+  string key = 1;
+  string content_type = 2;
+  bool as_data_uri = 3;
+  string url = 4;
+}
+message Lighting {
+  message Support {
+    message BootSupport {
+      bool supported = 1;
+      logi.protocol.firmware_lighting.Effect.SignatureSupport.Derivatives derivatives = 2;
+    }
+    logi.protocol.lighting_support.Device.Category device_category = 1;
+    map<string, string> type_map = 2;
+    repeated logi.protocol.firmware_lighting.Zone zones = 3;
+    bool is_monochrome = 4;
+    logi.protocol.util.Color color = 5;
+    bool is_per_key = 6;
+    logi.protocol.lighting_support.Persistence persistence = 7;
+    logi.protocol.devices.Lighting.Support.BootSupport startup_support = 8;
+    logi.protocol.devices.Lighting.Support.BootSupport shutdown_support = 9;
+    logi.protocol.devices.Lighting.Support.BootSupport passive_support = 10;
+    repeated uint32 brightness_levels = 11;
+    bool power_saving_effect = 12;
+    bool low_battery_effect = 13;
+    bool brightness_percentage = 14;
+    bool gamma = 15;
+    bool firmware_only = 16;
+    logi.protocol.util.Time fixed_deep_sleep = 17;
+    bool off_ramp = 18;
+    bool active_dimming = 19;
+    bool has_positional_effect = 20;
+    bool has_pastel_palette = 21;
+    bool has_ring_leds = 22;
+    bool has_master_switch = 23;
+    bool need_keep_alive_signal = 24;
+    bool has_pc_state_sync = 25;
+    bool bt_software_effects = 26;
+    bool overall_brightness = 27;
+    bool combined_lighting_settings = 28;
+    bool has_low_smooth_speed = 29;
+    uint32 default_smooth_speed = 30;
+    bool has_limited_low_battery_effects = 31;
+    bool has_report_rate_limited_lighting = 32;
+    bool use_fw_inactivity_lighting = 33;
+    bool has_light_bar = 34;
+    bool multi_lighting_zone = 35;
+    bool global_overall_brightness = 36;
+    bool allow_series_signature_pallets = 37;
+  }
+}
+message HostInfo {
+  enum Status {
+    EMPTY_SLOT = 0;
+    PAIRED = 1;
+  }
+  enum BusType {
+    INVALID = 0;
+    EQUAD = 1;
+    USB = 2;
+    BT = 3;
+    BLE = 4;
+  }
+  uint32 host_index = 1;
+  logi.protocol.devices.HostInfo.Status status = 2;
+  logi.protocol.devices.HostInfo.BusType bus_type = 3;
+}
+message GamingAttachments {
+  enum AttachmentId {
+    UNKNOWN = 0;
+    EXTERNAL_POWER = 1;
+    PEDALS = 2;
+    DRIVING_FORCE_SHIFTER = 3;
+    SHIFTER = 4;
+    PRO_PS_RIM = 5;
+    PRO_XB_RIM = 6;
+    PRO_PEDALS = 7;
+    RACING_ADAPTER = 8;
+    PRO_PC_RIM = 9;
+    QR_ADAPTER = 10;
+    H_SHIFTER = 11;
+  }
+  message Attachment {
+    logi.protocol.devices.GamingAttachments.AttachmentId id = 1;
+    repeated string slot_ids = 2;
+  }
+  repeated logi.protocol.devices.GamingAttachments.Attachment attachments = 1;
+}
+message SubComponent {
+  message Info {
+    uint32 id = 1;
+    string serial_number = 2;
+    string fw_name = 3;
+  }
+}
+message Subdevice {
+  enum Type {
+    INVALID_TYPE = 0;
+    RIM = 1;
+    DRIVE = 2;
+    PEDALS = 3;
+    LEFT_EARBUD = 4;
+    RIGHT_EARBUD = 5;
+    CASE = 6;
+    ADAPTER = 7;
+    RS_SHIFTER_HANDBRAKE = 8;
+    H_SHIFTER = 9;
+  }
+  message DeviceAssociation {
+    string firmware_name = 1;
+    logi.protocol.devices.Subdevice.Type type = 2;
+    bool can_be_standalone = 3;
+  }
+  message DeviceAssociations {
+    repeated logi.protocol.devices.Subdevice.DeviceAssociation device_associations = 1;
+  }
+  message Identifier {
+    uint32 index = 1;
+    uint32 parent_pid = 2;
+    uint32 self_pid = 3;
+    uint32 side = 4;
+  }
+  message Info {
+    string id = 1;
+    string firmware_name = 2;
+    string firmware_version = 3;
+    logi.protocol.devices.Subdevice.Identifier identifier = 4;
+    logi.protocol.devices.Subdevice.Type type = 5;
+  }
+  message List {
+    repeated logi.protocol.devices.Subdevice.Info subdevices_info = 1;
+  }
+  logi.protocol.devices.Subdevice.Identifier identifiers = 1;
+  logi.protocol.devices.Subdevice.Info info = 2;
+}
+message Subdevices {
+  message Info {
+    bool dynamic = 1;
+    bool hot = 2;
+    int32 max_index = 3;
+  }
+  message Flags {
+    bool plugged = 1;
+    bool dynamic = 2;
+    bool known = 3;
+    bool on = 4;
+  }
+  message Change {
+    int32 subdevice_index = 1;
+    logi.protocol.devices.Subdevices.Flags flags = 2;
+  }
+  message Subdevice {
+    int32 index = 1;
+    int32 max_packet_size = 2;
+    logi.protocol.devices.Subdevices.Flags flags = 3;
+  }
+}
+message Memfault_Submodule_Info {
+  repeated bool availables = 1;
+}
+message RestartDevice {
+  string device_path = 1;
+  bool force_restart_port = 2;
+}
+message DeviceFeatures {
+  message Feature {
+    string id = 1;
+    int32 version = 2;
+  }
+  repeated logi.protocol.devices.DeviceFeatures.Feature features = 1;
+}

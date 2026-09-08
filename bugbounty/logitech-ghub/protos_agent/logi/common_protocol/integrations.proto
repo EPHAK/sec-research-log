@@ -1,0 +1,331 @@
+syntax = "proto3";
+package logi.protocol.integrations;
+import "logi/common_protocol/applications.proto";
+import "logi/common_protocol/util.proto";
+
+message IntegrationManagerSettings {
+  bool allow_led_sdk = 1;
+}
+message Integration {
+  enum IntegrationType {
+    INVALID_TYPE = 0;
+    LIGHTING = 1;
+    LCD = 2;
+    ARX_CONTROL = 3;
+    ACTION = 4;
+    WHEEL = 5;
+    TRUEFORCE_WHEEL = 6;
+  }
+  enum LaunchType {
+    INVALID = 0;
+    MANUAL = 1;
+    ON_STARTUP = 2;
+    ON_FOCUS = 3;
+  }
+  message ApplicationPreferences {
+    bool enabled = 1;
+  }
+  message ConfigOption {
+    message GroupValue {
+      bool is_collapsed = 1;
+      repeated logi.protocol.integrations.Integration.ConfigOption sub_values = 2;
+    }
+    message BoolValue {
+      bool default_value = 1;
+      bool value = 2;
+    }
+    message IntValue {
+      int32 default_value = 1;
+      int32 value = 2;
+      bool use_min_value = 3;
+      int32 min_value = 4;
+      bool use_max_value = 5;
+      int32 max_value = 6;
+    }
+    message FloatValue {
+      float default_value = 1;
+      float value = 2;
+      bool use_min_value = 3;
+      float min_value = 4;
+      bool use_max_value = 5;
+      float max_value = 6;
+    }
+    message StringValue {
+      string default_value = 1;
+      string value = 2;
+    }
+    message ColorValue {
+      logi.protocol.util.Color default_value = 1;
+      logi.protocol.util.Color value = 2;
+    }
+    message KeyInputValue {
+      string default_value = 1;
+      string value = 2;
+    }
+    string label = 1;
+    string key = 2;
+    string full_key = 3;
+    uint32 display_order = 4;
+    logi.protocol.integrations.Integration.ConfigOption.GroupValue group_val = 5;
+    logi.protocol.integrations.Integration.ConfigOption.BoolValue bool_val = 6;
+    logi.protocol.integrations.Integration.ConfigOption.IntValue int_val = 7;
+    logi.protocol.integrations.Integration.ConfigOption.FloatValue float_val = 8;
+    logi.protocol.integrations.Integration.ConfigOption.StringValue string_val = 9;
+    logi.protocol.integrations.Integration.ConfigOption.ColorValue color_val = 10;
+    logi.protocol.integrations.Integration.ConfigOption.KeyInputValue key_input_val = 11;
+  }
+  message Action {
+    message Parameter {
+      enum ParameterType {
+        INVALID = 0;
+        LIST = 1;
+        NUMBER = 2;
+        TEXT = 3;
+        BOOL = 4;
+      }
+      message ListEntry {
+        string display_name = 1;
+        string value = 2;
+        repeated logi.protocol.integrations.Integration.Action.Parameter parameters = 3;
+      }
+      message Bool {
+        bool value = 1;
+      }
+      message Number {
+        float value = 1;
+        bool use_min_value = 2;
+        float min_value = 3;
+        bool use_max_value = 4;
+        float max_value = 5;
+      }
+      message Text {
+        string value = 1;
+      }
+      string parameter_id = 1;
+      string error_message = 2;
+      string assignment_message = 3;
+      logi.protocol.integrations.Integration.Action.Parameter.ParameterType parameter_type = 4;
+      repeated logi.protocol.integrations.Integration.Action.Parameter.ListEntry list_selection = 5;
+      logi.protocol.integrations.Integration.Action.Parameter.Number number_entry = 6;
+      logi.protocol.integrations.Integration.Action.Parameter.Text text_entry = 7;
+      logi.protocol.integrations.Integration.Action.Parameter.Bool bool_entry = 8;
+      repeated logi.protocol.integrations.Integration.Action.Parameter parameters = 20;
+    }
+    message Invoke {
+      string action_id = 1;
+      string integration_guid = 2;
+      map<string, string> parameters = 3;
+    }
+    message Register {
+      repeated logi.protocol.integrations.Integration.Action actions = 1;
+      logi.protocol.integrations.InstanceInfo instance = 2;
+    }
+    string name = 1;
+    string action_id = 2;
+    string action_icon = 3;
+    repeated logi.protocol.integrations.Integration.Action.Parameter parameters = 4;
+  }
+  message LED_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+    repeated logi.protocol.integrations.Integration.ConfigOption config_options = 3;
+  }
+  message LCD_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+  }
+  message ARX_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+    repeated logi.protocol.integrations.Integration.ConfigOption config_options = 3;
+  }
+  message Action_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+    repeated logi.protocol.integrations.Integration.Action actions = 3;
+  }
+  message Wheel_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+  }
+  message TrueForce_Wheel_SDK_Entry {
+    bool enabled = 1;
+    bool instantiated_once = 2;
+  }
+  logi.protocol.applications.Application target_application = 1;
+  logi.protocol.applications.Application supporting_application = 2;
+  repeated string supported_application_ids = 3;
+  string name = 4;
+  string author = 5;
+  string description = 6;
+  string icon = 7;
+  string icon_url = 8;
+  string poster = 9;
+  string poster_url = 10;
+  string guid = 11;
+  bool enabled = 12;
+  bool is_official = 13;
+  bool is_game = 14;
+  logi.protocol.integrations.Integration.LaunchType launch_type = 15;
+  map<string, logi.protocol.integrations.Integration.ApplicationPreferences> individual_application_preferences = 16;
+  logi.protocol.integrations.Integration.LED_SDK_Entry led_sdk = 20;
+  logi.protocol.integrations.Integration.LCD_SDK_Entry lcd_sdk = 21;
+  logi.protocol.integrations.Integration.ARX_SDK_Entry arx_sdk = 22;
+  logi.protocol.integrations.Integration.Action_SDK_Entry action_sdk = 23;
+  logi.protocol.integrations.Integration.Wheel_SDK_Entry wheel_sdk = 24;
+  logi.protocol.integrations.Integration.TrueForce_Wheel_SDK_Entry trueforce_wheel_sdk = 25;
+  bool has_installation = 30;
+  string installation_message = 31;
+  string download_message = 32;
+  string download_url = 33;
+  string plugin_path = 34;
+}
+message InstanceInfo {
+  string integration_guid = 1;
+  string integration_identifier = 2;
+  string instance_guid = 3;
+  logi.protocol.integrations.Integration.IntegrationType sdk_type = 4;
+}
+message AllInstanceInfos {
+  repeated logi.protocol.integrations.InstanceInfo instances_stack = 1;
+}
+message IntegrationInstances {
+  repeated logi.protocol.integrations.Integration.IntegrationType active_sdks = 1;
+}
+message ActiveIntegrations {
+  map<string, logi.protocol.integrations.IntegrationInstances> integrations = 1;
+}
+message Integrations {
+  repeated logi.protocol.integrations.Integration integrations = 1;
+}
+message IntegrationID {
+  string guid = 1;
+}
+message IntegrationIDs {
+  repeated string guids = 1;
+}
+message EnabledStatus {
+  string guid = 1;
+  bool enabled = 2;
+  string application_id = 3;
+  logi.protocol.integrations.Integration.IntegrationType sdk_type = 4;
+}
+message LaunchStatus {
+  string guid = 1;
+  logi.protocol.integrations.Integration.LaunchType launch_type = 2;
+}
+message IntegrationStates {
+  message IntegrationState {
+    bool installed = 1;
+  }
+  map<string, logi.protocol.integrations.IntegrationStates.IntegrationState> integrations = 1;
+}
+message SpecificConfigOption {
+  string guid = 1;
+  string full_key_path = 2;
+  logi.protocol.integrations.Integration.ConfigOption config_option = 3;
+  logi.protocol.integrations.Integration.IntegrationType sdk_type = 4;
+}
+message CommunityIntegration {
+  string name = 1;
+  string description = 2;
+  string download_url = 3;
+}
+message Install {
+  string guid = 1;
+  map<string, string> custom_tags = 2;
+}
+message SDKIntegration {
+  string app_path = 1;
+  string integration_identifier = 2;
+  string name = 3;
+  string author = 4;
+  string description = 5;
+  string icon = 6;
+  string poster = 7;
+  bool manual_registration = 8;
+  logi.protocol.integrations.Integration.IntegrationType integration_type = 10;
+}
+message SDKConfigOption {
+  string app_path = 1;
+  string full_key_path = 2;
+  logi.protocol.integrations.Integration.ConfigOption default_config_option = 3;
+  logi.protocol.integrations.Integration.IntegrationType sdk_type = 4;
+}
+message OBS {
+  enum States {
+    INVALID_STATE = 0;
+    IDLE = 1;
+    STREAMING = 2;
+    RECORDING = 3;
+  }
+  message StatusUpdate {
+    logi.protocol.integrations.OBS.States current_state = 1;
+    bool in_studio_mode = 2;
+    int32 bitrate = 3;
+    int32 framerate = 4;
+    string uptime = 5;
+    double cpu_usage = 6;
+    string active_profile = 7;
+    string active_collection = 8;
+    string active_scene = 9;
+  }
+}
+message StreamlabsOBS {
+  enum States {
+    INVALID_STATE = 0;
+    IDLE = 1;
+    STREAMING = 2;
+    RECORDING = 3;
+    STREAMING_RECORDING = 4;
+  }
+  message Source {
+    string display_name = 1;
+    string source_id = 2;
+    string resource_id = 4;
+    bool visible = 5;
+    bool has_audio = 6;
+    bool has_video = 7;
+    float volume = 8;
+    bool muted = 9;
+  }
+  message Service {
+    string key = 1;
+    string server = 2;
+    string service = 3;
+  }
+  message StatusUpdate {
+    logi.protocol.integrations.StreamlabsOBS.States current_state = 1;
+    string time_state_started = 2;
+    bool in_studio_mode = 3;
+    string active_scene = 4;
+    string active_scene_name = 5;
+    repeated logi.protocol.integrations.StreamlabsOBS.Source sources = 6;
+    repeated logi.protocol.integrations.StreamlabsOBS.Source audio = 7;
+    logi.protocol.integrations.StreamlabsOBS.Service service = 8;
+  }
+  message LiveValuesUpdate {
+    double bitrate = 1;
+    double framerate = 2;
+    double dropped_frames = 3;
+    double dropped_frames_percent = 4;
+    double cpu_usage = 5;
+  }
+  message NetworkStatus {
+    bool is_up = 1;
+  }
+}
+message LegacyWheel {
+  message OperatingRange {
+    int32 value = 1;
+  }
+  message LEDS {
+    float rpm_current = 1;
+    float rpm_first = 2;
+    float rpm_redline = 3;
+  }
+  int32 product_id = 1;
+  string device_instance = 2;
+  logi.protocol.integrations.LegacyWheel.OperatingRange operating_range = 3;
+  logi.protocol.integrations.LegacyWheel.LEDS leds = 4;
+}

@@ -1,0 +1,68 @@
+syntax = "proto3";
+package logi.protocol.centurion;
+
+message Hardware {
+  message Info {
+    enum DeviceSide {
+      LEFT = 0;
+      RIGHT = 1;
+    }
+    enum WiFiRegion {
+      REST_OF_THE_WORLD = 0;
+      NORTH_AMERICAN = 1;
+    }
+    uint32 model_id = 1;
+    uint32 hardware_rev = 2;
+    uint32 color_code = 3;
+    logi.protocol.centurion.Hardware.Info.WiFiRegion wifi_region = 4;
+    logi.protocol.centurion.Hardware.Info.DeviceSide device_side = 5;
+  }
+}
+message Firmware {
+  message Info {
+    enum Location {
+      LOCAL = 0;
+      REMOTE_1 = 1;
+      REMOTE_2 = 2;
+      REMOTE_3 = 3;
+    }
+    enum Type {
+      MAIN_MCU = 0;
+      AUDIO = 1;
+      BLUETOOTH = 2;
+      SECURITY = 3;
+      WIFI = 4;
+      OTHER_WIRELESS = 5;
+      ETHERNET = 6;
+      HDMI = 7;
+      SECONDARY_MCU = 8;
+      DSP = 9;
+      CHARGING = 10;
+      BATTERY = 11;
+      MISC_IO = 12;
+    }
+    message Version {
+      uint32 major = 1;
+      uint32 minor = 2;
+      uint32 build = 3;
+      string branch = 4;
+    }
+    logi.protocol.centurion.Firmware.Info.Version version = 1;
+    logi.protocol.centurion.Firmware.Info.Location location = 2;
+    logi.protocol.centurion.Firmware.Info.Type type = 3;
+    bool is_bootloader = 4;
+  }
+}
+message FactoryReset {
+  string serial_number = 1;
+  bool delete_cards = 2;
+}
+message DeviceBoolState {
+  bool headphone_jack_plugged_in = 1;
+  bool audio_clipping_detected = 2;
+  bool voice_volume_low = 3;
+  bool high_noise_levels_detected = 4;
+  bool address_angular_position = 5;
+  bool distance = 6;
+  bool onboarding_mode = 7;
+}

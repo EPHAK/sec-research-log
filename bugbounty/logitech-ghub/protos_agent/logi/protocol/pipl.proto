@@ -1,0 +1,26 @@
+syntax = "proto3";
+package logi.protocol.pipl;
+import "google/protobuf/timestamp.proto";
+
+message ConsentRequest {
+  bool force_refresh = 1;
+}
+message ConsentDetails {
+  bool eula = 1;
+  bool pii_process = 2;
+  bool pii_transfer = 3;
+  bool pii_share = 4;
+}
+message ConsentStatus {
+  enum Status {
+    DISABLED = 0;
+    ACCEPTED = 1;
+    REJECTED = 2;
+  }
+  logi.protocol.pipl.ConsentStatus.Status status = 1;
+  logi.protocol.pipl.ConsentDetails details = 2;
+}
+message RegionInfo {
+  string region = 1;
+  google.protobuf.Timestamp update_time = 2;
+}

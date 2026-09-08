@@ -1,0 +1,198 @@
+syntax = "proto3";
+package logi.updater_ipc.protocol.v1.pipeline.protobuf;
+
+message updates {
+  message Status {
+    enum State {
+      INVALID = 0;
+      INITIALIZING = 1;
+      NO_UPDATES = 2;
+      CHECKING_FOR_UPDATES = 3;
+      UPDATE_AVAILABLE = 4;
+      FEATURE_KEYS_AVAILABLE = 5;
+      UPDATE_DOWNLOADING = 6;
+      UPDATE_UNPACKING = 7;
+      UPDATE_READY = 8;
+      UPDATE_INSTALLING = 9;
+      RESTARTING = 10;
+      DEPOTS_DOWNLOADING = 11;
+      UPDATER_ERROR = 12;
+      UNSUPPORTED_OS_ERROR = 13;
+    }
+    enum ProgressType {
+      DOWNLOAD = 0;
+      UNCOMPRESS = 1;
+    }
+    message Progress {
+      float percent = 1;
+      float rate = 2;
+      uint64 download_size = 3;
+      uint64 expected_size = 4;
+      logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.ProgressType type = 5;
+    }
+    logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.State state = 1;
+    logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.Progress progress = 2;
+    int32 error_code = 3;
+    string error_message = 4;
+    uint32 retry_countdown = 5;
+  }
+  message Channel {
+    string pipeline_host = 1;
+    string name = 2;
+    string password = 3;
+    repeated string access_groups = 4;
+  }
+  message PeriodicCheck {
+    bool check_periodically = 1;
+    uint32 interval_in_seconds = 2;
+    string next_check_due_date = 3;
+    bool download_automatically = 4;
+    string next_check_due_timestamp = 5;
+  }
+  message Signature {
+    string signature = 1;
+  }
+  message Signatures {
+    uint32 version = 1;
+    repeated logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Signature signatures = 2;
+  }
+  message Depot {
+    enum State {
+      INVALID = 0;
+      LOCKED = 1;
+      ABSENT = 2;
+      REQUESTED = 3;
+      DOWNLOADING_SIGNATURE = 9;
+      SIGNATURE_PRESENT = 10;
+      DOWNLOADING = 4;
+      DOWNLOADED = 5;
+      VERIFYING = 6;
+      VERIFIED = 7;
+      PRESENT = 8;
+    }
+    enum Usage {
+      INVALID_USAGE = 0;
+      CURRENT = 1;
+      NEXT = 2;
+    }
+    message Info {
+      string name = 1;
+      logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.State state = 2;
+      string local_folder = 3;
+      string build_id = 4;
+      repeated string files = 5;
+    }
+    string name = 1;
+    logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.State state = 2;
+    string url = 3;
+    string cipher_suite = 4;
+    string iv = 5;
+    string key = 6;
+    string mac = 7;
+    uint64 size = 8;
+    string local_folder = 9;
+    repeated string files = 10;
+    repeated string depends_on = 11;
+    bool required = 12;
+    logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Signatures signatures = 13;
+  }
+  message Settings {
+    string settings_json = 1;
+  }
+  message Depository {
+    string version = 1;
+    string build_id = 2;
+    string branch = 3;
+    string access_group = 4;
+    string region = 5;
+    repeated logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot depots = 6;
+    string lockdown_name = 7;
+  }
+}
+message Request {
+  string app_tag = 1;
+}
+message IsOSVersionCompatibleResponse {
+  bool is_os_version_compatible = 1;
+}
+message CheckForUpdatesResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.State state = 1;
+}
+message DownloadUpdatesResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.State state = 1;
+}
+message DownloadDepotRequest {
+  string app_tag = 1;
+  string depot_name = 2;
+}
+message DownloadDepotResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info info = 1;
+}
+message RemoveDepotRequest {
+  string app_tag = 1;
+  string depot_name = 2;
+}
+message RemoveDepotResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info info = 1;
+}
+message ModifyStateRequest {
+  string app_tag = 1;
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.State expected = 2;
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status.State desired = 3;
+}
+message ModifyStateResponse {
+  bool success = 1;
+}
+message IsPermanentResponse {
+  bool is_permanent = 1;
+}
+message SetChannelRequest {
+  string app_tag = 1;
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Channel channel = 2;
+}
+message SetAutomaticDownloadRequest {
+  string app_tag = 1;
+  bool check = 2;
+}
+message BuildIdResponse {
+  string build_id = 1;
+}
+message DepositoryResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depository depository = 1;
+}
+message FindDepositoryRequest {
+  string app_tag = 1;
+  string build_id = 2;
+}
+message FindDepotRequest {
+  string app_tag = 1;
+  string build_id = 2;
+  string depot_name = 3;
+}
+message IsFileAccessibleRequest {
+  string app_tag = 1;
+  string depot_name = 2;
+  string file_path = 3;
+}
+message IsFileAccessibleResponse {
+  bool accessible = 1;
+}
+message StatusEvent {
+  string app_tag = 1;
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Status status = 2;
+}
+message DepotInfoEvent {
+  string app_tag = 1;
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Depot.Info depot_info = 2;
+}
+message DownloadSettingsResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Settings settings = 1;
+  int32 error_code = 2;
+}
+message SettingsResponse {
+  logi.updater_ipc.protocol.v1.pipeline.protobuf.updates.Settings settings = 1;
+}
+message SetApplicationNameRequest {
+  string app_tag = 1;
+  string application_name = 2;
+}

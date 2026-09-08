@@ -1,0 +1,42 @@
+syntax = "proto3";
+package logi.protocol.input_tracker;
+
+enum Filter {
+  NONE = 0;
+  MOUSE_MOVE = 1;
+  MOUSE_BUTTON = 2;
+  MOUSE_WHEEL = 3;
+  KEYBOARD = 4;
+}
+message Event {
+  message Keyboard {
+    uint64 hid_usage = 1;
+    bool is_down = 2;
+    string display_name = 3;
+  }
+  message Mouse {
+    message Button {
+      uint64 hid_usage = 1;
+      bool is_down = 2;
+    }
+    message Move {
+      int64 dx = 1;
+      int64 dy = 2;
+    }
+    message Wheel {
+      uint64 hid_usage = 1;
+      bool is_positive = 2;
+    }
+    logi.protocol.input_tracker.Event.Mouse.Button button = 1;
+    logi.protocol.input_tracker.Event.Mouse.Move move = 2;
+    logi.protocol.input_tracker.Event.Mouse.Wheel wheel = 3;
+  }
+  uint64 timestamp_microseconds = 1;
+  logi.protocol.input_tracker.Event.Keyboard keyboard = 2;
+  logi.protocol.input_tracker.Event.Keyboard hid_consumer = 3;
+  logi.protocol.input_tracker.Event.Mouse mouse = 4;
+}
+message Options {
+  bool keyboard_exclusive = 1;
+  repeated logi.protocol.input_tracker.Filter filter = 2;
+}

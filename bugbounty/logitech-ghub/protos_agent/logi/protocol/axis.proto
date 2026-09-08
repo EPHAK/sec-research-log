@@ -1,0 +1,43 @@
+syntax = "proto3";
+package logi.protocol.axis;
+
+enum Type {
+  INVALID_TYPE = 0;
+  NON_CENTERED = 1;
+  CENTERED = 2;
+}
+enum Id {
+  INVALID_ID = 0;
+  WHEEL = 1;
+  ACCELERATOR = 2;
+  BRAKE = 3;
+  CLUTCH = 4;
+  HANDBRAKE = 5;
+  AXIS_A = 6;
+  AXIS_B = 7;
+  SHIFT = 8;
+}
+message Ids {
+  repeated logi.protocol.axis.Id ids = 1;
+}
+message Info {
+  logi.protocol.axis.Id axis_id = 1;
+  string interface_id = 2;
+  uint32 page = 3;
+  uint32 usage = 4;
+  bool reversed = 5;
+  bool supports_arc_editor = 6;
+}
+message Mapping {
+  logi.protocol.axis.Id id = 1;
+  logi.protocol.axis.Id report_as_id = 2;
+}
+message Capabilities {
+  repeated logi.protocol.axis.Info info = 1;
+  repeated logi.protocol.axis.Mapping paddles_defaults = 2;
+}
+message DeadZone {
+  uint32 bottom = 1;
+  uint32 center = 2;
+  uint32 top = 3;
+}

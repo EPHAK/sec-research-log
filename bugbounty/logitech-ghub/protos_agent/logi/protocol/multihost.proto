@@ -1,0 +1,24 @@
+syntax = "proto3";
+package logi.protocol.multihost;
+
+enum BehaviorType {
+  DEFAULT = 0;
+  AUTO_REJECT = 1;
+}
+message Request {
+  message Control {
+    enum Type {
+      TYPE_INVALID = 0;
+      ACQUIRE = 1;
+      RELEASE = 2;
+    }
+    logi.protocol.multihost.Request.Control.Type type = 1;
+  }
+  message Behavior {
+    logi.protocol.multihost.BehaviorType type = 1;
+  }
+}
+message State {
+  bool in_control = 1;
+  logi.protocol.multihost.BehaviorType behavior_type = 2;
+}

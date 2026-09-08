@@ -1,0 +1,154 @@
+syntax = "proto3";
+package logi.protocol.application_source;
+import "logi/common_protocol/installer.proto";
+
+message Application {
+  enum ApplicationType {
+    INVALID_APPLICATION_TYPE = 0;
+    USER_INTERACTABLE = 1;
+    SHARED_DEPENDENCY = 2;
+  }
+  message SupportedOSRange {
+    string min_version = 1;
+    string max_version = 2;
+  }
+  message KeyStore {
+    string current = 1;
+    string next = 2;
+  }
+  message VersionSource {
+    enum Type {
+      INVALID_TYPE = 0;
+      FROM_EXECUTABLE = 1;
+      FROM_FILE = 2;
+    }
+    logi.protocol.application_source.Application.VersionSource.Type type = 1;
+    string path = 2;
+    string regex = 3;
+  }
+  message Relationships {
+    repeated string requirements = 1;
+    repeated string provides = 2;
+    repeated string obsoletes = 3;
+    repeated string conflicts = 4;
+    repeated string recommends = 5;
+    repeated string suggests = 6;
+    repeated string enhances = 7;
+    repeated string supplements = 8;
+  }
+  message ApplicationGate {
+    int32 id = 1;
+    string app_id = 2;
+    logi.protocol.application_source.Application.SupportedOSRange supported_os = 3;
+    logi.protocol.application_source.Application.KeyStore public_key = 4;
+    string core_depot_name = 6;
+    logi.protocol.application_source.Application.Relationships relationships = 7;
+  }
+  message ConditionalTest {
+    message Test {
+      enum Type {
+        INVALID_TYPE = 0;
+        FILE_EXISTS = 1;
+        DIRECTORY_EXISTS = 2;
+        REGISTRY_KEY_EXISTS = 3;
+        FILE_CONTENTS_MATCH = 4;
+        REGISTRY_KEY_MATCH = 5;
+      }
+      enum CompareType {
+        INVALID_COMPARE_TYPE = 0;
+        STRING = 1;
+        INTEGER = 2;
+        VERSION = 3;
+      }
+      enum MatchType {
+        INVALID_MATCH_TYPE = 0;
+        EXACT = 1;
+        CONTAINS = 2;
+        REGEX = 3;
+        GREATER_THAN = 4;
+        GREATER_THAN_OR_EQUALS = 5;
+        LESS_THAN = 6;
+        LESS_THAN_OR_EQUALS = 7;
+      }
+      logi.protocol.application_source.Application.ConditionalTest.Test.Type type = 1;
+      string key = 2;
+      string path = 3;
+      string regex_filter = 4;
+      string match = 5;
+      logi.protocol.application_source.Application.ConditionalTest.Test.MatchType match_type = 6;
+      logi.protocol.application_source.Application.ConditionalTest.Test.CompareType compare_type = 7;
+    }
+    message TestGroup {
+      enum Condition {
+        INVALID_CONDITION = 0;
+        OR = 1;
+        AND = 2;
+      }
+      logi.protocol.application_source.Application.ConditionalTest.TestGroup.Condition condition = 1;
+      bool invert = 2;
+      repeated logi.protocol.application_source.Application.ConditionalTest.Test tests = 3;
+      repeated logi.protocol.application_source.Application.ConditionalTest.TestGroup sub_groups = 4;
+    }
+    repeated logi.protocol.application_source.Application.ConditionalTest.TestGroup test_groups = 1;
+  }
+  message PathSubstitution {
+    string substitution = 1;
+    string path = 2;
+  }
+  message PipelineConfiguration {
+    string default_channel = 1;
+    string default_password = 2;
+  }
+  message SettingsData {
+    repeated string settings_files = 1;
+    repeated string userdata_paths = 2;
+    string current_user_storage_directory = 3;
+    string backup_storage_directory = 4;
+    string common_user_storage_directory = 5;
+  }
+  message CleanUpInfo {
+    repeated string process_identifiers = 1;
+    repeated string service_names = 2;
+    string registered_uuid = 3;
+    repeated string untracked_paths = 4;
+  }
+  message ManifestLauncherExtras {
+    repeated string install_args = 1;
+    repeated string update_args = 2;
+    repeated string uninstall_args = 3;
+  }
+  string name = 15;
+  string app_tag = 1;
+  repeated logi.protocol.application_source.Application.ApplicationGate app_gates = 2;
+  string application_directory = 3;
+  string storage_directory = 4;
+  bool is_updater_installer = 5;
+  repeated logi.protocol.application_source.Application.PathSubstitution path_substitutions = 6;
+  logi.protocol.application_source.Application.ConditionalTest integrity_check = 7;
+  logi.protocol.application_source.Application.ConditionalTest installation_check = 8;
+  logi.protocol.application_source.Application.ConditionalTest legacy_check = 9;
+  logi.protocol.application_source.Application.PipelineConfiguration pipeline_configuration = 10;
+  repeated string permissions_repair_paths = 11;
+  logi.protocol.application_source.Application.SettingsData settings = 12;
+  logi.protocol.application_source.Application.CleanUpInfo cleanup_info = 13;
+  logi.protocol.application_source.Application.VersionSource version_source = 14;
+  logi.protocol.installer.CommandLine launch = 16;
+  logi.protocol.application_source.Application.ApplicationType app_type = 17;
+  logi.protocol.application_source.Application.ManifestLauncherExtras launcher_extras = 19;
+}
+message ApplicationBundle {
+  string os = 1;
+  string path = 2;
+}
+message ApplicationSource {
+  repeated logi.protocol.application_source.ApplicationBundle applications = 1;
+}
+message Installation {
+  string app_tag = 1;
+  int32 id = 2;
+  bool user_installed = 3;
+  string version = 4;
+}
+message InstalledState {
+  repeated logi.protocol.application_source.Installation installed = 1;
+}

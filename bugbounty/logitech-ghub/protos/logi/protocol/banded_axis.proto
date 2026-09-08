@@ -1,0 +1,66 @@
+syntax = "proto3";
+package logi.protocol.banded_axis;
+import "logi/protocol/axis.proto";
+
+enum Id {
+  INVALID_BAND_ID = 0;
+  UPSHIFT = 1;
+  DOWNSHIFT = 2;
+  DIGITAL_HANDBRAKE = 3;
+}
+message BandAxisInfo {
+  logi.protocol.axis.Id axis_id = 1;
+  uint32 hid_page = 2;
+  uint32 hid_usage = 3;
+  uint32 band_count = 4;
+  logi.protocol.axis.Type type = 5;
+}
+message Info {
+  bool saveToNVMSupported = 1;
+  repeated logi.protocol.banded_axis.BandAxisInfo axes = 2;
+}
+message BandInfo {
+  message Info {
+    uint32 index = 1;
+    logi.protocol.banded_axis.Id id = 2;
+    double entry = 3;
+    double exit = 4;
+  }
+  uint32 axis_index = 1;
+  logi.protocol.axis.Id axis_id = 2;
+  repeated logi.protocol.banded_axis.BandInfo.Info band_info = 3;
+}
+message Band {
+  logi.protocol.banded_axis.Id id = 1;
+  double entry = 2;
+  double exit = 3;
+  uint32 sensitivity = 4;
+  bool enabled = 5;
+}
+message Bands {
+  repeated logi.protocol.banded_axis.Band bands = 1;
+}
+message Reset {
+  logi.protocol.banded_axis.Id band_id = 1;
+  logi.protocol.axis.Id axis_id = 2;
+}
+message BandChanged {
+  string device_id = 1;
+  logi.protocol.banded_axis.Id id = 2;
+  logi.protocol.axis.Id axis_id = 3;
+  uint32 band_index = 4;
+  bool is_active = 5;
+}
+message MemoryUpdate {
+  enum Status {
+    Success = 0;
+    HwError = 1;
+  }
+  string device_id = 1;
+  logi.protocol.axis.Id axis_id = 2;
+  logi.protocol.banded_axis.MemoryUpdate.Status status = 3;
+}
+message BroadcastChanged {
+  string parent_device_id = 1;
+  bool is_broadcasting_enabled = 2;
+}

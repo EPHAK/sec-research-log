@@ -1,0 +1,69 @@
+syntax = "proto3";
+package logi.protocol.pairing;
+import "logi/protocol/devices.proto";
+import "logi/protocol/devices_support.proto";
+import "logi/protocol/wireless.proto";
+
+message Pairing {
+  enum Result {
+    INVALID_RESULT = 0;
+    SUCCESS = 2;
+    IN_PROGRESS = 1;
+    FAILURE_TIMEOUT = -1;
+    FAILURE_INCOMPATIBLE = -2;
+    FAILURE_WRONG_DEVICE = -3;
+    FAILURE_CANCELED = -4;
+    FAILURE_UNKNOWN = -5;
+  }
+  enum Method {
+    INVALID_METHOD = 0;
+    STANDARD = 1;
+    UNIFYING = 2;
+    DUAL = 3;
+    CANCEL = -1;
+  }
+  message Device {
+    message List {
+      repeated logi.protocol.pairing.Pairing.Device list = 1;
+    }
+    logi.protocol.devices_support.Device.Model model_info = 1;
+    logi.protocol.devices.Capabilities.ReceiverPairing pairing_info = 2;
+    logi.protocol.wireless.Capabilities wireless_info = 3;
+  }
+  message Address {
+    repeated int32 address = 1;
+  }
+  message Compatibility {
+    string receiver_id = 1;
+    string device_model = 2;
+    logi.protocol.pairing.Pairing.Method method = 3;
+    repeated logi.protocol.devices.Receiver.Info.Basic result_receivers = 4;
+    repeated logi.protocol.pairing.Pairing.Device result_devices = 5;
+  }
+  string receiver_id = 1;
+  string device_id = 2;
+  string device_model = 3;
+  logi.protocol.pairing.Pairing.Method method = 4;
+  logi.protocol.pairing.Pairing.Result result = 5;
+}
+message Paired {
+  message Info {
+    enum ConnectionType {
+      INVAILD_TYPE = 0;
+      LIGHTSPEED = 1;
+    }
+    message Device {
+      string serial_number = 1;
+    }
+    logi.protocol.pairing.Paired.Info.ConnectionType connection_type = 1;
+    repeated logi.protocol.pairing.Paired.Info.Device devices = 2;
+  }
+  message Connection {
+    enum Status {
+      INVAILD_STATUS = 0;
+      CONNECTED = 1;
+      DISCONNECTED = 2;
+    }
+    logi.protocol.pairing.Paired.Connection.Status status = 1;
+  }
+}

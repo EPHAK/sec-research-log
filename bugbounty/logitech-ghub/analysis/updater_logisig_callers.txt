@@ -1,0 +1,470 @@
+
+/* ===== FUN_140a5e960 @ 140a5e960  [SEED] ===== */
+  STRINGS: 
+    | Logitech Inc
+    | Logitech Inc.
+    | Logitech Inc.
+
+/* WARNING: Function: __security_check_cookie replaced with injection: security_check_cookie */
+
+undefined8 FUN_140a5e960(undefined8 param_1)
+
+{
+  size_t _Size;
+  int iVar1;
+  undefined8 uVar2;
+  undefined8 *puVar3;
+  void *_Memory;
+  char *_Buf2;
+  undefined8 *_Buf1;
+  undefined1 auStack_58 [32];
+  void *local_38 [3];
+  ulonglong local_20;
+  ulonglong local_18;
+  
+  local_18 = DAT_141340300 ^ (ulonglong)auStack_58;
+  uVar2 = FUN_140a5ea70();
+  if ((char)uVar2 == '\0') {
+    return uVar2;
+  }
+  puVar3 = (undefined8 *)FUN_140a5f780(param_1,local_38);
+  _Buf1 = puVar3;
+  if (0xf < (ulonglong)puVar3[3]) {
+    _Buf1 = (undefined8 *)*puVar3;
+  }
+  _Size = puVar3[2];
+  if (_Size == 0xc) {
+    iVar1 = memcmp(_Buf1,PTR_s_Logitech_Inc_141048860,0xc);
+    if (iVar1 != 0) goto LAB_140a5e9d3;
+LAB_140a5ea02:
+    uVar2 = 1;
+  }
+  else {
+LAB_140a5e9d3:
+    _Buf2 = s_Logitech_Inc__14133b4f8;
+    if (0xf < DAT_14133b510) {
+      _Buf2 = (char *)s_Logitech_Inc__14133b4f8._0_8_;
+    }
+    if (_Size == DAT_14133b508) {
+      iVar1 = memcmp(_Buf1,_Buf2,_Size);
+      if (iVar1 == 0) goto LAB_140a5ea02;
+    }
+    uVar2 = 0;
+  }
+  if (0xf < local_20) {
+    _Memory = local_38[0];
+    if ((0xfff < local_20 + 1) &&
+       (_Memory = *(void **)((longlong)local_38[0] + -8),
+       0x1f < (ulonglong)((longlong)local_38[0] + (-8 - (longlong)_Memory)))) {
+                    /* WARNING: Subroutine does not return */
+      _invalid_parameter_noinfo_noreturn();
+    }
+    free(_Memory);
+  }
+  return uVar2;
+}
+
+
+/* ===== FUN_140a490f0 @ 140a490f0 ===== */
+
+void FUN_140a490f0(undefined8 *param_1)
+
+{
+  FUN_140a5e960(*param_1);
+  return;
+}
+
+
+/* ===== FUN_140129690 @ 140129690 ===== */
+  STRINGS: 
+    | About to run LUS utility!
+    | logi_install_tool.exe
+    | LUS installer not found at %s
+    | LUS installer found at %s
+    | Can't retrieve any valid certificate for %s:
+    | LUS utility is not signed by Logi certificate, or it is treated as not trusted. Path: %s.
+    | install
+    | --channel
+    | --password
+    | Failed to start LUS command: %s.
+    | LUS install tool command is not finished properly: %s.
+    | LUS install tool command is failed: %s. Exit code: %d.
+    | LUS install tool command is finished successfully: %s.
+
+/* WARNING: Function: __security_check_cookie replaced with injection: security_check_cookie */
+
+undefined1 *
+FUN_140129690(undefined8 param_1,undefined1 *param_2,undefined8 param_3,longlong param_4,
+             longlong param_5)
+
+{
+  void *pvVar1;
+  char cVar2;
+  int iVar3;
+  undefined4 uVar4;
+  undefined8 *puVar5;
+  undefined8 uVar6;
+  char *_Memory;
+  void *pvVar7;
+  undefined1 auStack_208 [32];
+  undefined1 local_1e8 [8];
+  undefined1 local_1e0 [8];
+  char local_1d8;
+  undefined8 local_1c8;
+  ulonglong uStack_1c0;
+  undefined8 local_1b8;
+  ulonglong local_1b0;
+  undefined1 local_1a8;
+  undefined7 uStack_1a7;
+  undefined8 local_198;
+  ulonglong local_190;
+  undefined1 local_188;
+  undefined7 uStack_187;
+  undefined8 local_178;
+  ulonglong local_170;
+  undefined1 local_168;
+  undefined7 uStack_167;
+  undefined8 local_158;
+  ulonglong local_150;
+  undefined1 local_148 [256];
+  ulonglong local_48;
+  
+  local_48 = DAT_141340300 ^ (ulonglong)auStack_208;
+  local_1c8 = (char *)0x0;
+  uStack_1c0 = 0;
+  local_1b8 = 0;
+  local_1b0 = 0xf;
+  local_1c8 = (char *)FUN_140dff73c(0x20);
+  uVar6 = s_About_to_run_LUS_utility__140f32140._8_8_;
+  local_1b8 = 0x19;
+  local_1b0 = 0x1f;
+  *(undefined8 *)local_1c8 = s_About_to_run_LUS_utility__140f32140._0_8_;
+  *(undefined8 *)(local_1c8 + 8) = uVar6;
+  *(undefined8 *)(local_1c8 + 0x10) = s_About_to_run_LUS_utility__140f32140._16_8_;
+  local_1c8[0x18] = s_About_to_run_LUS_utility__140f32140[0x18];
+  local_1c8[0x19] = '\0';
+  FUN_140129240(param_1,&local_1c8);
+  if (0xf < local_1b0) {
+    _Memory = local_1c8;
+    if ((0xfff < local_1b0 + 1) &&
+       (_Memory = *(char **)(local_1c8 + -8), (char *)0x1f < local_1c8 + (-8 - (longlong)_Memory)))
+    {
+                    /* WARNING: Subroutine does not return */
+      _invalid_parameter_noinfo_noreturn();
+    }
+    free(_Memory);
+  }
+  FUN_140a74130(&local_1c8,"logi_install_tool.exe");
+  FUN_140a74b10(local_1e8,param_3,&local_1c8);
+  FUN_140a747e0(&local_1c8);
+  cVar2 = FUN_140a7d050(local_1e8);
+  if (cVar2 == '\0') {
+    puVar5 = (undefined8 *)FUN_140a78ac0(local_1e8,&local_188);
+    if (0xf < (ulonglong)puVar5[3]) {
+      puVar5 = (undefined8 *)*puVar5;
+    }
+    uVar6 = FUN_140c0dec0(&local_1a8,"LUS installer not found at %s",puVar5);
+    FUN_140129450(param_1,param_2,uVar6);
+    if (0xf < local_190) {
+      pvVar1 = (void *)CONCAT71(uStack_1a7,local_1a8);
+      pvVar7 = pvVar1;
+      if ((0xfff < local_190 + 1) &&
+         (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+         0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+        _invalid_parameter_noinfo_noreturn();
+      }
+      free(pvVar7);
+    }
+    local_198 = 0;
+    local_190 = 0xf;
+    local_1a8 = 0;
+    if (0xf < local_170) {
+      pvVar1 = (void *)CONCAT71(uStack_187,local_188);
+      pvVar7 = pvVar1;
+      if ((0xfff < local_170 + 1) &&
+         (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+         0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+        _invalid_parameter_noinfo_noreturn();
+      }
+      free(pvVar7);
+    }
+    local_178 = 0;
+    local_170 = 0xf;
+    local_188 = 0;
+    goto LAB_140129fbc;
+  }
+  puVar5 = (undefined8 *)FUN_140a78ac0(local_1e8,&local_168);
+  if (0xf < (ulonglong)puVar5[3]) {
+    puVar5 = (undefined8 *)*puVar5;
+  }
+  uVar6 = FUN_140c0dec0(&local_188,"LUS installer found at %s",puVar5);
+  FUN_140129240(param_1,uVar6);
+  if (0xf < local_170) {
+    pvVar1 = (void *)CONCAT71(uStack_187,local_188);
+    pvVar7 = pvVar1;
+    if ((0xfff < local_170 + 1) &&
+       (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+       0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+      _invalid_parameter_noinfo_noreturn();
+    }
+    free(pvVar7);
+  }
+  local_178 = 0;
+  local_170 = 0xf;
+  local_188 = 0;
+  if (0xf < local_150) {
+    pvVar1 = (void *)CONCAT71(uStack_167,local_168);
+    pvVar7 = pvVar1;
+    if ((0xfff < local_150 + 1) &&
+       (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+       0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+      _invalid_parameter_noinfo_noreturn();
+    }
+    free(pvVar7);
+  }
+  FUN_140a48e80(local_1e0,local_1e8);
+  if (local_1d8 == '\0') {
+    cVar2 = FUN_140a490f0(local_1e0);
+    if (cVar2 == '\0') {
+      puVar5 = (undefined8 *)FUN_140a78ac0(local_1e8,&local_1a8);
+      if (0xf < (ulonglong)puVar5[3]) {
+        puVar5 = (undefined8 *)*puVar5;
+      }
+      uVar6 = FUN_140c0dec0(&local_188,
+                            "LUS utility is not signed by Logi certificate, or it is treated as not trusted. Path: %s."
+                            ,puVar5);
+      FUN_140129450(param_1,param_2,uVar6);
+      if (0xf < local_170) {
+        pvVar1 = (void *)CONCAT71(uStack_187,local_188);
+        pvVar7 = pvVar1;
+        if ((0xfff < local_170 + 1) &&
+           (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+           0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        free(pvVar7);
+      }
+      local_178 = 0;
+      local_170 = 0xf;
+      local_188 = 0;
+      if (0xf < local_190) {
+        pvVar1 = (void *)CONCAT71(uStack_1a7,local_1a8);
+        pvVar7 = pvVar1;
+        if ((0xfff < local_190 + 1) &&
+           (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+           0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        goto LAB_140129a48;
+      }
+      goto LAB_140129a4d;
+    }
+    uVar6 = FUN_140a78ac0(local_1e8,&local_188);
+    FUN_140a2ca80(local_148,uVar6);
+    if (0xf < local_170) {
+      pvVar1 = (void *)CONCAT71(uStack_187,local_188);
+      pvVar7 = pvVar1;
+      if ((0xfff < local_170 + 1) &&
+         (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+         0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+        _invalid_parameter_noinfo_noreturn();
+      }
+      free(pvVar7);
+    }
+    local_178 = 0;
+    local_170 = 0xf;
+    local_188 = 0;
+    uStack_1c0 = 0;
+    local_1b8 = 7;
+    local_1b0 = 0xf;
+    local_1c8 = (char *)(ulonglong)
+                        CONCAT16(s_install_140f2a9e0[6],
+                                 CONCAT24(s_install_140f2a9e0._4_2_,s_install_140f2a9e0._0_4_));
+    FUN_140a2cc80(local_148,&local_1c8);
+    if (0xf < local_1b0) {
+      pvVar7 = local_1c8;
+      if (0xfff < local_1b0 + 1) {
+        pvVar7 = *(void **)((longlong)local_1c8 + -8);
+        if (0x1f < (ulonglong)((longlong)local_1c8 + (-8 - (longlong)pvVar7))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+      }
+      free(pvVar7);
+    }
+    if (*(longlong *)(param_4 + 0x10) != 0) {
+      local_1b8 = 9;
+      local_1b0 = 0xf;
+      local_1c8 = (char *)s___channel_140f32230._0_8_;
+      uStack_1c0 = (ulonglong)(byte)s___channel_140f32230[8];
+      FUN_140a2cc80(local_148,&local_1c8);
+      if (0xf < local_1b0) {
+        pvVar7 = local_1c8;
+        if ((0xfff < local_1b0 + 1) &&
+           (pvVar7 = *(void **)((longlong)local_1c8 + -8),
+           0x1f < (ulonglong)((longlong)local_1c8 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        free(pvVar7);
+      }
+      FUN_140a2ccd0(local_148,param_4);
+    }
+    if (*(longlong *)(param_5 + 0x10) != 0) {
+      local_1b8 = 10;
+      local_1b0 = 0xf;
+      local_1c8 = (char *)s___password_140f32240._0_8_;
+      uStack_1c0 = (ulonglong)(ushort)s___password_140f32240._8_2_;
+      FUN_140a2cc80(local_148,&local_1c8);
+      if (0xf < local_1b0) {
+        pvVar7 = local_1c8;
+        if ((0xfff < local_1b0 + 1) &&
+           (pvVar7 = *(void **)((longlong)local_1c8 + -8),
+           0x1f < (ulonglong)((longlong)local_1c8 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        free(pvVar7);
+      }
+      FUN_140a2ccd0(local_148,param_5);
+    }
+    local_1c8 = (char *)0x0;
+    uStack_1c0 = 0;
+    cVar2 = FUN_140a30400(local_148,1,&local_1c8);
+    if (cVar2 == '\0') {
+      puVar5 = (undefined8 *)FUN_140a2ce70(local_148,&local_168);
+      if (0xf < (ulonglong)puVar5[3]) {
+        puVar5 = (undefined8 *)*puVar5;
+      }
+      uVar6 = FUN_140c0dec0(&local_1a8,"Failed to start LUS command: %s.",puVar5);
+      FUN_140129450(param_1,param_2,uVar6);
+      if (0xf < local_190) {
+        pvVar1 = (void *)CONCAT71(uStack_1a7,local_1a8);
+        pvVar7 = pvVar1;
+        if ((0xfff < local_190 + 1) &&
+           (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+           0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        free(pvVar7);
+      }
+      local_198 = 0;
+      local_190 = 0xf;
+      local_1a8 = 0;
+      if (0xf < local_150) {
+        pvVar1 = (void *)CONCAT71(uStack_167,local_168);
+        pvVar7 = pvVar1;
+        if ((0xfff < local_150 + 1) &&
+           (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+           0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+          _invalid_parameter_noinfo_noreturn();
+        }
+        free(pvVar7);
+      }
+      local_158 = 0;
+      local_150 = 0xf;
+      local_168 = 0;
+    }
+    else {
+      cVar2 = FUN_140a33190(local_148);
+      if (cVar2 == '\x01') {
+        iVar3 = FUN_140a2d660(local_148);
+        if (iVar3 == 0) {
+          puVar5 = (undefined8 *)FUN_140a2ce70(local_148,&local_1a8);
+          if (0xf < (ulonglong)puVar5[3]) {
+            puVar5 = (undefined8 *)*puVar5;
+          }
+          uVar6 = FUN_140c0dec0(&local_168,"LUS install tool command is finished successfully: %s.",
+                                puVar5);
+          FUN_140129240(param_1,uVar6);
+          FUN_140025ab0(&local_168);
+          FUN_140025ab0(&local_1a8);
+          *param_2 = 1;
+          param_2[0x28] = 0;
+        }
+        else {
+          uVar4 = FUN_140a2d660();
+          puVar5 = (undefined8 *)FUN_140a2ce70(local_148,&local_1a8);
+          if (0xf < (ulonglong)puVar5[3]) {
+            puVar5 = (undefined8 *)*puVar5;
+          }
+          uVar6 = FUN_140c0dec0(&local_168,"LUS install tool command is failed: %s. Exit code: %d.",
+                                puVar5,uVar4);
+          FUN_140129450(param_1,param_2,uVar6);
+          FUN_140025ab0(&local_168);
+          FUN_140025ab0(&local_1a8);
+        }
+      }
+      else {
+        puVar5 = (undefined8 *)FUN_140a2ce70(local_148,&local_1a8);
+        if (0xf < (ulonglong)puVar5[3]) {
+          puVar5 = (undefined8 *)*puVar5;
+        }
+        uVar6 = FUN_140c0dec0(&local_168,"LUS install tool command is not finished properly: %s.",
+                              puVar5);
+        FUN_140129450(param_1,param_2,uVar6);
+        FUN_140025ab0(&local_168);
+        FUN_140025ab0(&local_1a8);
+      }
+    }
+    FUN_140026620(local_148);
+  }
+  else {
+    puVar5 = (undefined8 *)FUN_140a78ac0(local_1e8,&local_1a8);
+    if (0xf < (ulonglong)puVar5[3]) {
+      puVar5 = (undefined8 *)*puVar5;
+    }
+    uVar6 = FUN_140c0dec0(&local_188,"Can\'t retrieve any valid certificate for %s:",puVar5);
+    FUN_140129450(param_1,param_2,uVar6);
+    if (0xf < local_170) {
+      pvVar1 = (void *)CONCAT71(uStack_187,local_188);
+      pvVar7 = pvVar1;
+      if ((0xfff < local_170 + 1) &&
+         (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+         0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)pvVar7)))) {
+                    /* WARNING: Subroutine does not return */
+        _invalid_parameter_noinfo_noreturn();
+      }
+      free(pvVar7);
+    }
+    local_178 = 0;
+    local_170 = 0xf;
+    local_188 = 0;
+    if (0xf < local_190) {
+      pvVar1 = (void *)CONCAT71(uStack_1a7,local_1a8);
+      pvVar7 = pvVar1;
+      if ((0xfff < local_190 + 1) &&
+         (pvVar7 = *(void **)((longlong)pvVar1 + -8),
+         0x1f < (ulonglong)((longlong)pvVar1 + (-8 - (longlong)*(void **)((longlong)pvVar1 + -8)))))
+      {
+                    /* WARNING: Subroutine does not return */
+        _invalid_parameter_noinfo_noreturn();
+      }
+LAB_140129a48:
+      local_170 = 0xf;
+      local_178 = 0;
+      local_188 = 0;
+      free(pvVar7);
+    }
+LAB_140129a4d:
+    local_198 = 0;
+    local_190 = 0xf;
+    local_1a8 = 0;
+  }
+  if ((local_1d8 != -1) && (local_1d8 == '\0')) {
+    FUN_140a48db0(local_1e0);
+  }
+LAB_140129fbc:
+  FUN_140a747e0(local_1e8);
+  return param_2;
+}
+

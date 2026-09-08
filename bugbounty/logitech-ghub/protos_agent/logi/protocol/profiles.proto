@@ -1,0 +1,111 @@
+syntax = "proto3";
+package logi.protocol.profiles;
+import "logi/common_protocol/applications.proto";
+import "logi/protocol/cards.proto";
+import "logi/protocol/community.proto";
+import "logi/protocol/slots.proto";
+
+message Profile {
+  message Slots {
+    message Cards {
+      string profile_id = 1;
+      map<string, logi.protocol.cards.Card> slot_cards = 2;
+    }
+    string profile_id = 1;
+    repeated string slots = 2;
+  }
+  message Assignment {
+    string profile_id = 1;
+    logi.protocol.slots.Assignment assignment = 2;
+    logi.protocol.cards.Card card = 3;
+  }
+  string id = 1;
+  string name = 2;
+  string application_id = 3;
+  bool active_for_application = 4;
+  repeated logi.protocol.slots.Assignment assignments = 5;
+  string lighting_card = 6;
+  string sync_lighting_card = 7;
+  string script_id = 8;
+  bool has_persistent_assignments = 9;
+  bool disabled = 10;
+  logi.protocol.community.Publishing publishing = 100;
+}
+message ProfileId {
+  string id = 1;
+}
+message Profiles {
+  repeated logi.protocol.profiles.Profile profiles = 1;
+}
+message CompleteProfile {
+  logi.protocol.profiles.Profile profile = 1;
+  repeated logi.protocol.cards.Card cards = 2;
+  bool keep_profile_id = 3;
+  repeated logi.protocol.applications.Command commands_list = 4;
+}
+message Update {
+  repeated logi.protocol.profiles.Profile update_profiles = 1;
+  repeated string removed_profile_ids = 2;
+}
+message RestoreDefaults {
+  string profile_id = 1;
+  repeated string slot_ids = 2;
+}
+message PersistentFeature {
+  enum Type {
+    INVALID = 0;
+    MOUSE_SETTINGS = 1;
+    ACOUSTICS = 2;
+    EQUALIZER = 3;
+    ASSIGNMENTS = 4;
+    GAME_MODE = 5;
+    WEBCAM = 6;
+    LIGHTING = 7;
+    WHEEL = 8;
+    PEDALS = 9;
+    MICROPHONE = 10;
+    HEADPHONE_JACK = 11;
+    MICROPHONE_BLUEVOICE_2 = 12;
+    ILLUMINATION_LIGHT = 13;
+    RPM_PATTERNS = 14;
+    MOUSE_SENSITIVITY = 15;
+    DISABLE_CONTROLS = 16;
+    ROUTING = 17;
+    PARAMETRIC_EQ = 18;
+    PARAMETRIC_MIC_EQ = 19;
+    INPUT_CONFIGURATION = 20;
+    WEBCAM_MICROPHONE = 21;
+    RS_SHIFTER_HANDBRAKE = 22;
+    ANALOG_CONFIGURATION = 23;
+    DYNAMIC_SWITCHES = 24;
+    LOGI_VOICE_MICROPHONE = 25;
+    BUNNY_HOPPING = 26;
+    PERFORMANCE = 27;
+    RAPID_SWITCHES = 28;
+    SCROLL_WHEEL = 29;
+  }
+  logi.protocol.profiles.PersistentFeature.Type type = 1;
+  string device_model = 2;
+  string master_profile = 3;
+  repeated string configuring_slots = 4;
+  string device_prefix = 5;
+  string device_signature = 6;
+}
+message PersistentFeatures {
+  repeated logi.protocol.profiles.PersistentFeature features = 1;
+  repeated logi.protocol.slots.Assignment assignments = 2;
+  string lighting_card = 3;
+  string sync_lighting_card = 4;
+}
+message MigrationProgress {
+  float value = 1;
+}
+message LegacyProfiles {
+  bool exist = 1;
+}
+message ExportOptions {
+  string id = 1;
+  bool export_all_macros = 2;
+  bool export_read_only_cards = 3;
+  repeated string device_ids = 4;
+}

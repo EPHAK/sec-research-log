@@ -1,0 +1,210 @@
+syntax = "proto3";
+package logi.protocol.input_preset;
+import "logi/protocol/keyboard.proto";
+import "logi/protocol/macros.proto";
+
+message Capabilities {
+  message EnableToggleOption {
+    uint32 cid_held = 1;
+    uint32 cid_trigger = 2;
+    uint32 id = 3;
+    bool enabled = 5;
+  }
+  message EnableToggleOptions {
+    repeated logi.protocol.input_preset.Capabilities.EnableToggleOption enable_toggle_options = 1;
+  }
+  message MultiActionSupport {
+    enum MultiActionFeatures {
+      MULTI_ACTION_FLAVORS = 0;
+      PERSISTED_MULTI_ACTION_SAPP = 1;
+    }
+    repeated logi.protocol.input_preset.Capabilities.MultiActionSupport.MultiActionFeatures supported_features = 1;
+  }
+  bool supports_presets = 1;
+  repeated logi.protocol.input_preset.Input.Category supported_categories = 2;
+  bool supports_layer_configuration = 3;
+  repeated logi.protocol.input_preset.Input.Layer supported_layers = 4;
+  bool has_enable_toggle = 5;
+  uint32 maximum_trigger_index = 7;
+  uint32 maximum_multi_action_keys = 8;
+  logi.protocol.input_preset.Capabilities.MultiActionSupport multi_action_support = 9;
+  bool has_remappable_dial = 10;
+  logi.protocol.keyboard.Keyboard.GKeyLayout gkey_layout = 20;
+  repeated logi.protocol.input_preset.Capabilities.EnableToggleOption enable_toggle_options = 21;
+}
+message Input {
+  enum Type {
+    INVALID_TYPE = 0;
+    BUTTON = 1;
+    SCROLL = 2;
+    ANALOG_BUTTON = 3;
+    KNOB = 4;
+  }
+  enum ButtonEvent {
+    INVALID_BUTTON_EVENT = 0;
+    BUTTON_STANDARD = 1;
+    BUTTON_PRESS = 2;
+    BUTTON_RELEASE = 3;
+    BUTTON_HOLD = 4;
+    BUTTON_HOLD_PRESS = 5;
+    BUTTON_HOLD_RELEASE = 6;
+    BUTTON_LONG_HOLD = 7;
+    BUTTON_LONG_HOLD_PRESS = 8;
+    BUTTON_LONG_HOLD_RELEASE = 9;
+    BUTTON_CLICK = 10;
+    BUTTON_DOUBLE_CLICK = 11;
+  }
+  enum ScrollEvent {
+    INVALID_SCROLL_EVENT = 0;
+    SCROLL_TICK = 1;
+    SCROLL_WHILE = 2;
+  }
+  enum KnobEvent {
+    INVALID_KNOB_EVENT = 0;
+    KNOB_ROTATION_CLOCKWISE = 1;
+    KNOB_ROTATION_COUNTER_CLOCKWISE = 2;
+  }
+  enum Category {
+    INVALID_CATEGORY = 0;
+    G_KEY = 1;
+    KEYBOARD_KEY = 2;
+    MOUSE_BUTTON = 3;
+    MOUSE_SCROLL = 4;
+    KEYBOARD_ROLLER = 5;
+    KEYBOARD_ANALOG_KEY = 6;
+    KEYBOARD_KNOB = 7;
+    KEYBOARD_KNOB_BUTTON = 8;
+  }
+  enum Layer {
+    LAYER_BASE = 0;
+    LAYER_FN = 1;
+    LAYER_G = 2;
+    LAYER_MODE1 = 10;
+    LAYER_MODE1_G = 11;
+    LAYER_MODE2 = 12;
+    LAYER_MODE2_G = 13;
+    LAYER_MODE3 = 14;
+    LAYER_MODE3_G = 15;
+  }
+  enum Modifier {
+    NO_MODIFIER = 0;
+    CTRL_L = 1;
+    SHIFT_L = 2;
+    ALT_L = 4;
+    GUI_L = 8;
+    CTRL_R = 16;
+    SHIFT_R = 32;
+    ALT_R = 64;
+    GUI_R = 128;
+  }
+  message AnalogButtonEvent {
+    enum RawButtonAction {
+      INVALID_RAW_BUTTON_ACTION = 0;
+      RAW_BUTTON_RELEASED = 1;
+      RAW_BUTTON_PRESSED = 2;
+      RAW_BUTTON_MAKE = 3;
+      RAW_BUTTON_BREAK = 4;
+      RAW_BUTTON_MAKE_BREAK = 5;
+      RAW_BUTTON_BREAK_MAKE = 6;
+      RAW_BUTTON_BREAK_MAKE_BREAK = 7;
+    }
+    message DirectionalEvent {
+      enum Configuration {
+        CONFIGURATION_CUSTOM = 0;
+        CONFIGURATION_STANDARD_BIDIRECTIONAL = 1;
+        CONFIGURATION_STANDARD_BIDIRECTIONAL_REVERSED = 2;
+      }
+      enum Direction {
+        INVALID_DIRECTION = 0;
+        DIRECTION_DOWN = 1;
+        DIRECTION_UP = 2;
+      }
+      logi.protocol.input_preset.Input.AnalogButtonEvent.DirectionalEvent.Direction trigger_direction = 1;
+      logi.protocol.input_preset.Input.AnalogButtonEvent.RawButtonAction action_type = 2;
+    }
+    uint32 trigger_actuation_point = 1;
+    logi.protocol.input_preset.Input.AnalogButtonEvent.DirectionalEvent.Configuration directional_events_configuration = 2;
+    map<uint32, logi.protocol.input_preset.Input.AnalogButtonEvent.DirectionalEvent> directional_events = 3;
+  }
+  message ModifierFlags {
+    logi.protocol.input_preset.Input.Modifier modifier_flags = 1;
+  }
+  message TriggerIndices {
+    logi.protocol.input_preset.Input.Layer trigger_layer = 1;
+    repeated uint32 triggers_indices = 2;
+  }
+}
+message InputPreset {
+  message Assignment {
+    logi.protocol.input_preset.Input.ButtonEvent button_event = 1;
+    logi.protocol.input_preset.Input.ScrollEvent scroll_event = 2;
+    string macro_id = 10;
+    logi.protocol.macros.PlaybackParameters params = 11;
+    string target_device = 12;
+  }
+  message ModifierAssignments {
+    repeated logi.protocol.input_preset.Input.Modifier modifiers = 1;
+    uint32 modifier_flag = 2;
+    map<uint32, logi.protocol.input_preset.InputPreset.Assignment> event_assignments = 10;
+    map<uint32, logi.protocol.input_preset.InputPreset.AnalogButtonAssignment> analog_button_assignments = 11;
+  }
+  message AnalogAssignmentParameters {
+    enum MultiActionScheme {
+      COMBINE_SCHEME = 0;
+      ALTERNATE_SCHEME = 1;
+      CUSTOM_SCHEME = 2;
+    }
+    bool has_sapp = 1;
+    logi.protocol.input_preset.InputPreset.AnalogAssignmentParameters.MultiActionScheme multi_action_scheme = 2;
+  }
+  message InputAssignments {
+    enum ExclusiveAssignment {
+      NONE = 0;
+      DISABLE = 1;
+      GSHIFT = 2;
+    }
+    uint32 input_id = 1;
+    bool respect_modifier_sides = 5;
+    logi.protocol.input_preset.InputPreset.InputAssignments.ExclusiveAssignment exclusive_assignment = 10;
+    map<uint32, logi.protocol.input_preset.InputPreset.ModifierAssignments> modifier_assignments = 11;
+    logi.protocol.input_preset.InputPreset.AnalogAssignmentParameters analog_assignment_parameters = 12;
+  }
+  message AnalogButtonAssignment {
+    uint32 assignment_id = 1;
+    uint32 modifier_flag = 2;
+    string macro_id = 3;
+    map<uint32, logi.protocol.input_preset.Input.AnalogButtonEvent> events = 4;
+  }
+  message CategoryAssignments {
+    logi.protocol.input_preset.Input.Category category = 1;
+    logi.protocol.input_preset.Input.Type type = 2;
+    map<uint32, logi.protocol.input_preset.InputPreset.InputAssignments> input_assignments = 10;
+  }
+  message Configuration {
+    map<uint32, string> layer_presets = 1;
+    map<uint32, logi.protocol.input_preset.InputPreset.CategoryAssignments> pan_assignments = 2;
+  }
+  message CustomLayoutStatus {
+    string device_signature = 1;
+    uint32 pid = 2;
+    bool enabled = 3;
+    string device_id = 4;
+  }
+  message Description {
+    enum Handedness {
+      INDIFFERENT = 0;
+      RIGHT_HANDED = 1;
+      LEFT_HANDED = 2;
+      AMBIDEXTROUS = 3;
+      RIGHT_FOOTED = 4;
+      LEFT_FOOTED = 5;
+      BOTH_FEET = 6;
+      MOUTH = 7;
+    }
+    logi.protocol.keyboard.Keyboard.Layout keyboard_layout = 1;
+    logi.protocol.keyboard.Keyboard.GKeyLayout gkey_layout = 2;
+    logi.protocol.input_preset.InputPreset.Description.Handedness handedness = 20;
+  }
+  logi.protocol.input_preset.InputPreset.Description description = 1;
+  map<uint32, logi.protocol.input_preset.InputPreset.CategoryAssignments> assignments = 2;
+}

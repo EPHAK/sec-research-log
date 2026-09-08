@@ -1,0 +1,94 @@
+syntax = "proto3";
+package logi.protocol.devices_support;
+import "logi/protocol/devices.proto";
+
+message Device {
+  message Support {
+    logi.protocol.devices.Device.Type type = 1;
+    string family_id = 2;
+    string model_id = 3;
+    string display_name = 4;
+    string extended_display_name = 5;
+    string slot_prefix = 6;
+    string depot = 10;
+    string depot_prefix = 11;
+    map<string, string> depots = 12;
+    string dfu_depot = 13;
+    string thumbnail = 14;
+    repeated logi.protocol.devices_support.Device.Mode modes = 20;
+    repeated logi.protocol.devices_support.Device.Interface setup_interfaces = 21;
+    logi.protocol.devices.Driver driver = 25;
+    logi.protocol.devices.Capabilities capabilities = 30;
+    string firmware_name = 31;
+    string string_package = 32;
+    logi.protocol.devices.AssetsPackages assets_packages = 33;
+  }
+  message Model {
+    message List {
+      repeated logi.protocol.devices_support.Device.Model devices = 1;
+    }
+    string model_id = 1;
+    string slot_prefix = 2;
+    string display_name = 3;
+    string extended_display_name = 4;
+    logi.protocol.devices.Device.Type type = 5;
+    string thumbnail = 6;
+    repeated logi.protocol.devices_support.Device.Derivative derivatives = 7;
+  }
+  message Derivative {
+    uint32 extended_model = 1;
+    string model_id = 2;
+    string display_name = 3;
+    string extended_display_name = 4;
+    string thumbnail = 5;
+    logi.protocol.devices.Capabilities capabilities = 6;
+    string depot = 7;
+    string slot_prefix = 8;
+    map<string, string> depots = 9;
+    uint32 parent_extended_model = 10;
+  }
+  message Interface {
+    logi.protocol.devices.Device.Interface.Type type = 1;
+    string id = 2;
+    repeated logi.protocol.devices_support.Device.Derivative derivatives = 3;
+    logi.protocol.devices.Device.DisplayConnection display_connection_type = 4;
+    string display_name = 5;
+    string extended_display_name = 6;
+    bool is_optional = 7;
+    string depot = 8;
+    bool use_reported_name = 9;
+  }
+  message Mode {
+    repeated logi.protocol.devices_support.Device.Interface interfaces = 1;
+  }
+}
+message Devices {
+  repeated logi.protocol.devices_support.Device.Support devices = 1;
+}
+message Receiver {
+  message Support {
+    string model_id = 1;
+    string display_name = 2;
+    logi.protocol.devices.Receiver.Type type = 3;
+    logi.protocol.devices.Device.Type device_type = 4;
+    string dfu_depot = 6;
+    repeated logi.protocol.devices_support.Receiver.Mode modes = 7;
+    logi.protocol.devices.Receiver.Metadata metadata = 8;
+  }
+  message Derivative {
+    uint32 extended_model = 1;
+    logi.protocol.devices.Device.Type device_type = 2;
+    string display_name = 3;
+  }
+  message Interface {
+    logi.protocol.devices.Receiver.Interface.Type type = 1;
+    string id = 2;
+    repeated logi.protocol.devices_support.Receiver.Derivative derivatives = 4;
+  }
+  message Mode {
+    repeated logi.protocol.devices_support.Receiver.Interface interfaces = 1;
+  }
+  message List {
+    repeated logi.protocol.devices_support.Receiver.Support receivers = 1;
+  }
+}

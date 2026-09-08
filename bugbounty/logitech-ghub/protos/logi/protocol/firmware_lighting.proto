@@ -1,0 +1,268 @@
+syntax = "proto3";
+package logi.protocol.firmware_lighting;
+import "logi/common_protocol/util.proto";
+import "logi/common_protocol/lighting_support.proto";
+
+message CardSettings {
+  message Firmware {
+    message Brightness {
+      uint32 value = 1;
+      bool is_off = 2;
+    }
+    repeated logi.protocol.firmware_lighting.Effect effects = 1;
+    repeated logi.protocol.firmware_lighting.Effect power_saving_effects = 2;
+    logi.protocol.firmware_lighting.CardSettings.Firmware.Brightness brightness = 3;
+  }
+  message Sync {
+    map<string, logi.protocol.lighting_support.Device.Category> devices = 1;
+    repeated logi.protocol.firmware_lighting.Effect effects = 2;
+  }
+}
+message Zone {
+  enum OnboardCluster {
+    CLUSTER_DEFAULT = 0;
+    CLUSTER_ZERO = 1;
+    CLUSTER_ONE = 2;
+  }
+  logi.protocol.lighting_support.Zone.Type zone_type = 1;
+  repeated logi.protocol.firmware_lighting.Effect.Support supported_effects = 2;
+  logi.protocol.util.Color default_color = 3;
+  logi.protocol.firmware_lighting.Zone.OnboardCluster onboard_cluster = 4;
+}
+message Effect {
+  enum Id {
+    INVALID = 0;
+    OFF = 1;
+    FIXED = 2;
+    CYCLE = 3;
+    COLORWAVE = 4;
+    BREATHING = 5;
+    RIPPLE = 6;
+    CUSTOM = 7;
+    KITT = 8;
+    DECOMPOSITION = 9;
+    SNIPE_PULSE_CP = 10;
+    NEURAL_WAVE_CP = 11;
+    SNIPE_PULSE = 12;
+    NEURAL_WAVE = 13;
+    STREAMING = 14;
+    COLOR_CYCLE_S = 15;
+    COLORWAVE_S = 16;
+    RIPPLE_S = 17;
+    SMOOTH_STAR = 18;
+    SMOOTH_WAVE = 19;
+    SIGNATURE_FRAME_ACTIVE = 20;
+    SIGNATURE_FRAME_INACTIVE = 21;
+    SIGNATURE_ALGORITHMIC_ACTIVE = 22;
+    SIGNATURE_ALGORITHMIC_INACTIVE = 23;
+    SIGNATURE_HARDCODED_ACTIVE = 24;
+    SIGNATURE_HARDCODED_INACTIVE = 25;
+  }
+  message SignatureSupport {
+    message Derivatives {
+      logi.protocol.firmware_lighting.Effect.SignatureSupport standard = 1;
+      map<uint32, logi.protocol.firmware_lighting.Effect.SignatureSupport> derivative_overrides = 2;
+    }
+    logi.protocol.util.Color signature_color_one = 1;
+    logi.protocol.util.Color signature_color_two = 2;
+    logi.protocol.util.Color signature_color_one_preview = 3;
+    logi.protocol.util.Color signature_color_two_preview = 4;
+    float intensity = 5;
+    bool allow_custom_colors = 6;
+    bool allow_custom_intensity = 7;
+    logi.protocol.lighting_support.Effect.Type effect_type = 8;
+    uint32 signature_effect_index = 9;
+  }
+  message DerivativeOverrides {
+    string name = 1;
+    bool fixed_rate = 2;
+    bool fixed_intensity = 3;
+    bool fixed_saturation = 4;
+    logi.protocol.firmware_lighting.Effect.SignatureSupport signature_support = 5;
+  }
+  message Support {
+    logi.protocol.firmware_lighting.Effect.Id id = 1;
+    bool syncable = 2;
+    bool fixed_intensity = 3;
+    bool signature = 4;
+    bool inactivity_only = 5;
+    string name = 6;
+    bool fixed_rate = 7;
+    bool fixed_saturation = 8;
+    logi.protocol.firmware_lighting.Effect.SignatureSupport signature_support = 9;
+    map<uint32, logi.protocol.firmware_lighting.Effect.DerivativeOverrides> derivative_overrides = 10;
+  }
+  logi.protocol.firmware_lighting.Effect.Id id = 1;
+  logi.protocol.lighting_support.Zone.Type zone_type = 2;
+  bool persistent = 3;
+  logi.protocol.firmware_lighting.Fixed.Params fixed_params = 4;
+  logi.protocol.firmware_lighting.Breathing.Params breathing_params = 5;
+  logi.protocol.firmware_lighting.ColorCycle.Params cycle_params = 7;
+  logi.protocol.firmware_lighting.ColorWave.Params colorwave_params = 8;
+  logi.protocol.firmware_lighting.Ripple.Params ripple_params = 9;
+  logi.protocol.firmware_lighting.Custom.Params custom_params = 10;
+  logi.protocol.firmware_lighting.Kitt.Params kitt_params = 11;
+  logi.protocol.firmware_lighting.Decomposition.Params decomposition_params = 12;
+  logi.protocol.firmware_lighting.FrameData.Params frame_data_params = 13;
+  logi.protocol.firmware_lighting.DualColor.Params dual_color_params = 15;
+}
+message Effects {
+  repeated logi.protocol.firmware_lighting.Effect effects = 1;
+}
+message Power {
+  message Saving {
+    logi.protocol.firmware_lighting.Effects firmware_effects = 1;
+    float brightness = 2;
+    logi.protocol.util.Time inactivity = 3;
+    logi.protocol.util.Time sleep = 4;
+  }
+}
+message Battery {
+  enum Effect {
+    BREATHING = 0;
+    BRANDING_BREATHING = 1;
+    PRIMARY_BREATHING = 2;
+    FIXED = 3;
+    OFF = 4;
+  }
+  message Warning {
+    logi.protocol.firmware_lighting.Battery.Effect effect = 1;
+  }
+}
+message Boot {
+  message Effect {
+    bool enabled = 1;
+    logi.protocol.util.Color color_one = 2;
+    logi.protocol.util.Color color_two = 3;
+    float intensity = 4;
+  }
+}
+message Fixed {
+  message Params {
+    logi.protocol.util.Color color = 1;
+  }
+}
+message Breathing {
+  message Params {
+    logi.protocol.util.Color color = 1;
+    uint32 period_in_ms = 2;
+    float intensity = 3;
+  }
+}
+message ColorCycle {
+  message Params {
+    uint32 period_in_ms = 1;
+    float intensity = 2;
+    float saturation = 3;
+  }
+}
+message ColorWave {
+  enum Direction {
+    INVALID = 0;
+    HORIZONTAL = 1;
+    VERTICAL = 2;
+    CENTER_OUT = 3;
+    INWARD = 4;
+    OUTWARD = 5;
+    REVERSE_HORIZONTAL = 6;
+    REVERSE_VERTICAL = 7;
+    CENTER_IN = 8;
+    DEFAULT = 9;
+    REVERSE = 10;
+  }
+  message Params {
+    uint32 period_in_ms = 1;
+    logi.protocol.firmware_lighting.ColorWave.Direction direction = 2;
+    float intensity = 3;
+    float saturation = 4;
+  }
+}
+message Ripple {
+  message Params {
+    logi.protocol.util.Color color = 1;
+    uint32 period_in_ms = 2;
+    float saturation = 3;
+  }
+}
+message Custom {
+  message Params {
+    uint32 slot = 1;
+    uint32 frame_rate = 2;
+    float intensity = 3;
+    string name = 4;
+    string software_id = 5;
+  }
+}
+message Kitt {
+  message Params {
+    logi.protocol.util.Color color = 1;
+    uint32 overlap = 2;
+    uint32 period_in_ms = 3;
+    logi.protocol.util.Color bg_color = 4;
+    float intensity = 5;
+  }
+}
+message Decomposition {
+  message Params {
+    uint32 period_in_ms = 1;
+    float intensity = 2;
+  }
+}
+message FrameData {
+  message Params {
+    uint32 frame_rate = 1;
+    float intensity = 2;
+  }
+}
+message DualColor {
+  message Params {
+    logi.protocol.util.Color color_one = 1;
+    logi.protocol.util.Color color_two = 2;
+    uint32 period_in_ms = 3;
+    float intensity = 4;
+    uint32 signature_effect_index = 5;
+  }
+}
+message Sync {
+  bool enabled = 1;
+  repeated logi.protocol.firmware_lighting.Effect effects = 2;
+}
+message Devio {
+  message Zone {
+    enum Type {
+      INVALID = 0;
+      PRIMARY = 1;
+      LOGO = 2;
+      LEFT_SIDE = 3;
+      RIGHT_SIDE = 4;
+      COMBINED = 5;
+      ZONAL_ONE = 6;
+      ZONAL_TWO = 7;
+      ZONAL_THREE = 8;
+      ZONAL_FOUR = 9;
+      ZONAL_FIVE = 10;
+      ZONAL_SIX = 11;
+      ZONAL_SEVEN = 12;
+      BATTERY = 13;
+      DPI = 14;
+      PROFILE = 15;
+      COSMETIC = 16;
+      IDLE_STATE = 17;
+      IN_USE_STATE = 18;
+      MUTED_STATE = 19;
+      SOFT_MUTED_STATE = 20;
+      ALL = 255;
+    }
+  }
+  message PerKey {
+    enum Type {
+      INVALID = 0;
+      HID_KEYBOARD = 1;
+      HID_CONSUMER = 2;
+      G_KEY = 3;
+      GENERIC_BUTTON = 4;
+      LOGO = 5;
+      KEYBOARD_OTHER = 6;
+    }
+  }
+}

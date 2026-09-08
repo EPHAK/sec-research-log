@@ -1,0 +1,12 @@
+syntax = "proto3";
+package logi.protocol.report_rates;
+
+message ReportRate {
+  uint32 value = 1;
+  uint32 wireless_rate = 2;
+  string device_id = 3;
+}
+message ReportRates {
+  repeated uint32 rates = 1;
+  repeated uint32 wireless_rates = 2;
+}

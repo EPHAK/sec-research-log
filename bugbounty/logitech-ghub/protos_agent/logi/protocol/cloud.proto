@@ -1,0 +1,52 @@
+syntax = "proto3";
+package logi.protocol.cloud;
+import "logi/protocol/community.proto";
+
+message Server {
+  message Blob {
+    string id = 1;
+    string key = 2;
+    string uploaded_by = 3;
+    string url = 4;
+    uint64 filesize = 5;
+    string created_at = 6;
+    string updated_at = 7;
+  }
+  message LipIdentity {
+    string sub = 1;
+    string email = 2;
+    string given_name = 3;
+    string family_name = 4;
+    bool email_verified = 5;
+  }
+  message LipToken {
+    string id_token = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    int32 expires_in = 4;
+    int32 refresh_token_expires_in = 5;
+    bool email_verified = 6;
+  }
+  message LipKey {
+    map<string, string> keys = 1;
+  }
+  message LipKeys {
+    repeated logi.protocol.cloud.Server.LipKey lip_keys = 1;
+  }
+  message Response {
+    int32 status_code = 1;
+    string text = 2;
+    logi.protocol.cloud.Server.LipToken lip_token = 10;
+    logi.protocol.cloud.Server.LipIdentity lip_identity = 11;
+    logi.protocol.cloud.Server.LipKeys lip_keys = 12;
+    logi.protocol.cloud.Server.LipToken lip_token_cn = 13;
+    logi.protocol.community.ResultSet result_set = 20;
+    logi.protocol.community.User user = 21;
+    logi.protocol.community.Blob blob = 22;
+    logi.protocol.community.UpvoteEntity upvote_entity = 23;
+    logi.protocol.community.DownloadEntity download_entity = 24;
+    logi.protocol.community.DeleteEntity delete_entity = 25;
+    logi.protocol.community.QueryDefaults query_defaults = 26;
+    logi.protocol.community.ChangeVisibility change_visibility = 27;
+  }
+}

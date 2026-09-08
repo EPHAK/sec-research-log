@@ -1,0 +1,95 @@
+syntax = "proto3";
+package logi.protocol.discord;
+
+enum VoiceSettingMode {
+  PUSH_TO_TALK = 0;
+  VOICE_ACTIVITY = 1;
+}
+enum ChannelType {
+  TEXT = 0;
+  DM = 1;
+  VOICE = 2;
+  GROUP_DM = 3;
+}
+enum NotificationType {
+  VOICE_CREATE = 0;
+  VOICE_UPDATE = 1;
+  VOICE_DELETE = 2;
+  SPEAK_START = 3;
+  SPEAK_STOP = 4;
+}
+message DiscordState {
+  bool installed = 1;
+}
+message User {
+  string snowflake = 1;
+  string user_name = 2;
+  string discriminator = 3;
+  string avatar = 4;
+  bool bot = 5;
+}
+message GuildMember {
+  logi.protocol.discord.User user = 1;
+  string nick = 2;
+  bool deaf = 3;
+  bool mute = 4;
+}
+message Guild {
+  string id = 1;
+  string name = 2;
+  string icon_url = 3;
+  repeated logi.protocol.discord.GuildMember members = 4;
+  logi.protocol.discord.Channels channels = 5;
+}
+message Guilds {
+  repeated logi.protocol.discord.Guild guilds = 1;
+}
+message VoiceState {
+  string guild_id = 1;
+  string channel_id = 2;
+  string user_id = 3;
+  logi.protocol.discord.GuildMember member = 4;
+  string session_id = 5;
+  int32 volume = 6;
+  bool deaf = 7;
+  bool mute = 8;
+  bool self_deaf = 9;
+  bool self_mute = 10;
+  bool suppress = 11;
+}
+message VoiceStateNotification {
+  logi.protocol.discord.NotificationType event_type = 1;
+  logi.protocol.discord.VoiceState voice_state = 2;
+}
+message SpeakStateNotification {
+  logi.protocol.discord.NotificationType event_type = 1;
+  string user_id = 2;
+}
+message Channel {
+  string id = 1;
+  string guild_id = 2;
+  string name = 3;
+  int32 type = 4;
+  int32 position = 5;
+  repeated logi.protocol.discord.VoiceState voice_states = 6;
+}
+message Channels {
+  repeated logi.protocol.discord.Channel channels = 1;
+}
+message UserVoiceSettings {
+  string user_id = 1;
+  int32 volume = 2;
+  bool mute = 3;
+  float pan_left = 4;
+  float pan_right = 5;
+}
+message ClientVoiceSettings {
+  logi.protocol.discord.VoiceSettingMode mode = 1;
+  bool automatic_gain_control = 2;
+  bool echo_cancellation = 3;
+  bool noise_suppression = 4;
+  bool qos = 5;
+  bool silence_warning = 6;
+  bool deaf = 7;
+  bool mute = 8;
+}

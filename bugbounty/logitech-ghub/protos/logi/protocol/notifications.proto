@@ -1,0 +1,112 @@
+syntax = "proto3";
+package logi.protocol.notifications;
+import "logi/common_protocol/util.proto";
+import "logi/protocol/report_rates.proto";
+
+message SystemNotification {
+  enum DisplayStyle {
+    SYSTEM = 0;
+    TOAST = 1;
+    AUDIO = 2;
+  }
+  string message_key = 1;
+  map<string, string> data = 2;
+  logi.protocol.util.Time timeout = 3;
+  logi.protocol.notifications.SystemNotification.DisplayStyle style = 4;
+  string title_key = 5;
+  string trigger = 6;
+}
+message Audio {
+  enum Language {
+    INVALID_LANGUAGE = 0;
+    ENGLISH_US = 1;
+    ENGLISH_UK = 2;
+    SPANISH_ES = 3;
+    GERMAN_DE = 4;
+    FRENCH_FR = 5;
+    JAPANESE_JP = 6;
+    KOREAN_KR = 7;
+    CHINESE_CN = 8;
+  }
+  message Languages {
+    repeated logi.protocol.notifications.Audio.Language language_list = 1;
+  }
+}
+message Support {
+  message AudioPrompts {
+    message Battery {
+      bool automatic_warning = 1;
+      logi.protocol.util.Time warning_timeout = 2;
+      uint32 warning_threshold = 3;
+      bool on_user_check = 4;
+    }
+    bool play_on_device = 1;
+    logi.protocol.notifications.Support.AudioPrompts.Battery battery = 2;
+  }
+  logi.protocol.notifications.Support.AudioPrompts audio_prompts = 1;
+  bool report_rate_prompts = 2;
+}
+message Settings {
+  message Device {
+    message Desktop {
+      bool disabled = 1;
+      bool equalizer_disabled = 2;
+      bool surround_sound_disabled = 3;
+      bool firmware_update_disabled = 4;
+      bool custom_assignments_disabled = 5;
+      bool quarantine_disabled = 6;
+    }
+    message AudioPrompt {
+      bool disabled = 1;
+      bool battery_disabled = 2;
+    }
+    string device_model = 1;
+    logi.protocol.notifications.Settings.Device.Desktop desktop_notifications = 2;
+    logi.protocol.notifications.Settings.Device.AudioPrompt audio_prompt_notifications = 3;
+  }
+  bool desktop_notifications_disabled = 1;
+  bool audio_prompts_disabled = 5;
+  logi.protocol.notifications.Audio.Language audio_prompts_language = 6;
+  map<string, logi.protocol.notifications.Settings.Device> device_notification_settings = 10;
+}
+message Notification {
+  message Equalizer {
+    string name = 1;
+  }
+  message SurroundSound {
+    bool enabled = 1;
+  }
+  message FirmwareUpdate {
+    bool required = 1;
+    bool is_receiver = 2;
+  }
+  message BatteryPrompt {
+    uint32 percentage = 1;
+  }
+  message CustomAssignments {
+    bool enabled = 1;
+  }
+  message Quarantine {
+    bool quarantined = 1;
+  }
+  message AnalogChange {
+    enum Type {
+      UNKNOWN = 0;
+      ANALOG_INSTALLED = 1;
+      GALVANIC_INSTALLED = 2;
+      ANALOG_CONFLICT = 3;
+    }
+    logi.protocol.notifications.Notification.AnalogChange.Type type = 1;
+  }
+  string device_id = 1;
+  string title_key = 2;
+  string message_key = 3;
+  logi.protocol.notifications.Notification.Equalizer equalizer = 10;
+  logi.protocol.notifications.Notification.SurroundSound surround_sound = 11;
+  logi.protocol.notifications.Notification.FirmwareUpdate firmware_update = 12;
+  logi.protocol.notifications.Notification.CustomAssignments custom_assignments = 13;
+  logi.protocol.notifications.Notification.Quarantine quarantine = 14;
+  logi.protocol.report_rates.ReportRate report_rate = 15;
+  logi.protocol.notifications.Notification.AnalogChange analog_change = 16;
+  logi.protocol.notifications.Notification.BatteryPrompt battery_prompt = 20;
+}

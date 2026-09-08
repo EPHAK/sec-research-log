@@ -1,0 +1,48 @@
+syntax = "proto3";
+package logi.protocol.slots;
+import "logi/protocol/cards.proto";
+
+message Slot {
+  enum Format {
+    INVALID_FORMAT = 0;
+    LEGACY = 1;
+    MODEL = 2;
+    UNIQUE = 3;
+    DISTINCT = 4;
+  }
+  message Map {
+    map<string, logi.protocol.slots.Slot> map = 1;
+  }
+  string id = 1;
+  logi.protocol.cards.Card.Attribute attribute = 2;
+  bool disabled = 3;
+  string default_card = 4;
+}
+message Assignment {
+  string slot_id = 1;
+  string card_id = 2;
+}
+message AssignmentMap {
+  map<string, string> assignments = 1;
+}
+message AssignmentRequest {
+  message List {
+    repeated logi.protocol.slots.AssignmentRequest requests = 1;
+  }
+  string slot_id = 1;
+  logi.protocol.cards.Card card = 2;
+  bool ignore_effective = 10;
+  bool return_card = 11;
+  bool update_card = 12;
+  bool skip_apply = 13;
+  bool restore_default = 14;
+  string profile = 20;
+}
+message Defaults {
+  message Assignment {
+    string slot_id = 1;
+    logi.protocol.cards.Card card = 2;
+  }
+  repeated logi.protocol.slots.Defaults.Assignment assignments = 1;
+  repeated logi.protocol.cards.Card presets = 2;
+}

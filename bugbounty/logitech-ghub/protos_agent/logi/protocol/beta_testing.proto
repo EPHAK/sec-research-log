@@ -1,0 +1,12 @@
+syntax = "proto3";
+package logi.protocol.beta_testing;
+import "google/protobuf/timestamp.proto";
+
+message Features {
+  message FeatureDetails {
+    bool enabled = 1;
+    bool restore_from_backup = 2;
+    google.protobuf.Timestamp backup_date = 3;
+  }
+  map<string, logi.protocol.beta_testing.Features.FeatureDetails> features = 1;
+}

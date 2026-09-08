@@ -1,0 +1,17 @@
+syntax = "proto3";
+package logi.protocol.api;
+
+message websocket_server {
+  bool start = 1;
+}
+message system_info {
+  bool is_cpu_apple_silicon = 1;
+}
+message remote_router_connection {
+  bool connected = 1;
+  string uid = 2;
+  string service_id = 3;
+}
+message remote_router_connections {
+  repeated logi.protocol.api.remote_router_connection connections = 1;
+}

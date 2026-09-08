@@ -1,0 +1,31 @@
+syntax = "proto3";
+package logi.protocol.local_settings_backup;
+
+message BackupProfile {
+  string name = 1;
+  string description = 2;
+  repeated string profile_ids = 3;
+  repeated string device_model_ids = 4;
+  string export_path = 5;
+}
+message RestoreProfile {
+  string file_path = 1;
+  bool create_new_id = 2;
+}
+message ManifestFilter {
+  repeated string application_ids = 1;
+  string path = 2;
+}
+message ManifestFiles {
+  map<string, logi.protocol.local_settings_backup.Manifest> file_map = 1;
+}
+message Manifest {
+  string manifest_version = 1;
+  string name = 2;
+  string description = 3;
+  string timestamp = 4;
+  repeated string profile_ids = 5;
+  map<string, string> application_ids = 6;
+  repeated string device_model_ids = 7;
+  string profile_version = 8;
+}

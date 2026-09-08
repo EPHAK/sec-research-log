@@ -1,0 +1,74 @@
+syntax = "proto3";
+package logi.protocol.rpm_indicator;
+import "logi/common_protocol/util.proto";
+
+message Capabilities {
+  enum LedType {
+    UNKNOWN = 0;
+    RGB888 = 1;
+    MONO8 = 2;
+    MONO1 = 3;
+  }
+  logi.protocol.rpm_indicator.Capabilities.LedType type = 1;
+  uint32 led_count = 2;
+  uint32 mode_count = 3;
+}
+message DisplayMode {
+  enum Mode {
+    UNKNOWN = 0;
+    DIRECT = 1;
+    INOUT = 2;
+    OUTIN = 3;
+    LEFTTORIGHT = 4;
+    RIGHTTOLEFT = 5;
+    CUSTOM_1 = 6;
+    CUSTOM_2 = 7;
+    CUSTOM_3 = 8;
+    CUSTOM_4 = 9;
+    CUSTOM_5 = 10;
+  }
+  logi.protocol.rpm_indicator.DisplayMode.Mode id = 1;
+}
+message SupportedModes {
+  repeated logi.protocol.rpm_indicator.DisplayMode modes = 1;
+}
+message RpmLed {
+  bool mono1 = 1;
+  uint32 mono8 = 2;
+  uint32 rgb888 = 3;
+}
+message LedColor {
+  uint32 index = 1;
+  uint32 count = 2;
+  repeated logi.protocol.rpm_indicator.RpmLed leds = 3;
+}
+message Rpm {
+  uint32 first_led_on = 2;
+  uint32 last_rpm_on = 3;
+  uint32 current_rpm = 4;
+}
+message RpmLedDeviceInfo {
+  uint32 profiles_count = 1;
+  uint32 profiles_start_index = 2;
+  uint32 max_name_length = 3;
+  logi.protocol.rpm_indicator.Capabilities.LedType led_type = 4;
+  uint32 led_count = 5;
+  repeated string pattern_names = 6;
+}
+message RpmLedPattern {
+  enum Type {
+    UNKNOWN = 0;
+    IN_OUT = 1;
+    OUT_IN = 2;
+    LEFT_TO_RIGHT = 3;
+    RIGHT_TO_LEFT = 4;
+  }
+  uint32 pattern_index = 1;
+  logi.protocol.rpm_indicator.RpmLedPattern.Type mode = 2;
+  string name = 3;
+  repeated logi.protocol.util.Color colors = 4;
+}
+message RPMPatternSettings {
+  logi.protocol.rpm_indicator.DisplayMode.Mode effect_index = 1;
+  logi.protocol.util.RangeInt brightness = 2;
+}

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package logi.gl.protocol;
+
+message Game {
+  string service_game_id = 1;
+  uint32 source_id = 2;
+  string default_name = 3;
+  uint64 last_launched_at = 4;
+  string source_name = 5;
+  string source_icon = 6;
+  bool is_favorite = 7;
+  bool is_completed = 8;
+  bool is_hidden = 9;
+  bool is_excluded = 10;
+  string name = 11;
+  string storyline = 12;
+  string description = 13;
+  string exe_icon_path = 14;
+  string cover_image_url = 15;
+  string background_image_url = 16;
+  string release_date = 17;
+  repeated string developers = 18;
+  repeated string publishers = 19;
+  repeated string genres = 20;
+  repeated string themes = 21;
+  repeated string age_ratings = 22;
+  repeated string features = 23;
+  bool is_replay_enabled = 24;
+}
+message Games {
+  repeated logi.gl.protocol.Game games = 1;
+}

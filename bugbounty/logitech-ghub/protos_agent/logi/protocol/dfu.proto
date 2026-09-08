@@ -1,0 +1,196 @@
+syntax = "proto3";
+package logi.protocol.dfu;
+import "logi/protocol/devices.proto";
+import "logi/common_protocol/util.proto";
+
+message BackupData {
+  message Feature1300Data {
+    uint32 battery_led = 1;
+    uint32 profile_led = 2;
+    uint32 dpi_led = 3;
+  }
+  message Feature807xData {
+    bool bootup_enabled = 1;
+  }
+  message Feature0108Data {
+    logi.protocol.util.Time shutdown_timer = 1;
+    logi.protocol.util.Time shallow_sleep_timer = 2;
+    logi.protocol.util.Time deep_sleep_timer = 3;
+  }
+  uint64 time = 1;
+  string serial_number = 2;
+  string old_firmware_version = 3;
+  bytes feature_8100_data = 4;
+  logi.protocol.dfu.BackupData.Feature1300Data feature_1300_data = 5;
+  logi.protocol.dfu.BackupData.Feature807xData feature_807x_data = 6;
+  logi.protocol.dfu.BackupData.Feature0108Data feature_0108_data = 7;
+}
+message Start {
+  enum Blocker {
+    BLOCKER_INVALID = 0;
+    BLOCKER_MISSING_UPDATE_INTERFACE = 1;
+    BLOCKER_MISSING_BATTERY_INFORMATION = 2;
+    BLOCKER_CONNECT_COMPATIBLE_RECEIVER = 3;
+    BLOCKER_MISSING_DEVICE_INTERFACES = 4;
+    BLOCKER_CONNECT_USB = 11;
+    BLOCKER_DISCONNECT_BT = 12;
+    BLOCKER_BATTERY_NOT_CHARGING = 21;
+    BLOCKER_LOW_BATTERY = 22;
+    BLOCKER_MISSING_BATTERY = 23;
+  }
+  enum Warning {
+    WARNING_INVALID = 0;
+    WARNING_UPDATE_RECEIVER_AND_DEVICE = 1;
+    CRITICAL_UPDATE_RECEIVER_AND_DEVICE_PAIRING = 2;
+    WARNING_KEEP_RECEIVER_CONNECTED = 3;
+    WARNING_NONFUNCTIONAL_DURING_UPDATE = 4;
+    WARNING_UPDATE_RECEIVER_AND_DEVICE_OVER_USB = 5;
+    WARNING_NOT_PLAYBACK_DEVICE = 6;
+    EARBUDS_WARNING_CONNECT_LS = 10;
+    EARBUDS_WARNING_KEEP_INSIDE_CHARGING_CASE = 11;
+    EARBUDS_WARNING_LOW_BATTERY = 12;
+    EARBUDS_WARNING_KEEP_CHARGING_CASE_OPEN = 13;
+  }
+}
+message Info {
+  enum State {
+    STATE_INVALID = 0;
+    STATE_PENDING = 1;
+    STATE_NONE = 2;
+    STATE_NOT_READY = 3;
+    STATE_READY = 4;
+    STATE_IN_PROGRESS = 6;
+  }
+  message Request {
+    repeated string entity_ids = 1;
+    bool include_release_notes = 2;
+  }
+  message Map {
+    map<string, logi.protocol.dfu.Info> info_map = 1;
+  }
+  string entity_id = 1;
+  bool is_receiver = 2;
+  logi.protocol.dfu.Info.State state = 3;
+  bool is_required = 4;
+  logi.protocol.dfu.Start.Blocker start_blocker = 5;
+  repeated logi.protocol.dfu.Start.Warning start_warnings = 6;
+  string version = 7;
+  bool is_dismissed = 8;
+  string release_notes = 9;
+  string download_url = 10;
+  repeated string dependencies = 11;
+  repeated string updates = 12;
+  logi.protocol.dfu.Info parent_entity = 13;
+  string entity_version = 14;
+}
+message Entities {
+  repeated string entity_ids = 1;
+}
+message Progress {
+  enum State {
+    PROGRESS_INVALID = 0;
+    PROGRESS_NOT_STARTED = 1;
+    PROGRESS_STARTED = 2;
+    PROGRESS_PREPARING = 3;
+    PROGRESS_UNDERGOING = 4;
+    PROGRESS_BLOCKED = 5;
+    PROGRESS_ERROR = 6;
+    PROGRESS_INSTALLING = 7;
+    PROGRESS_FINALIZING = 8;
+    PROGRESS_COMPLETE = 9;
+    PROGRESS_ABORTED = 10;
+  }
+  enum ErrorCode {
+    ERROR_NONE = 0;
+    ERROR_CONNECTION = -1;
+    ERROR_WIRELESS_CONNECTION = -2;
+    ERROR_GENERIC = -3;
+    ERROR_INTERFACE_MISSING = -4;
+    ERROR_INTERFACE_NOT_READY = -5;
+    ERROR_INTERFACE_LOST = -6;
+    ERROR_INTERFACE_TIMEOUT = -7;
+    ERROR_GENERIC_WIRED = -8;
+  }
+  enum Blocker {
+    BLOCKER_INVALID = 0;
+    BLOCKER_UNPLUG_REPLUG_USB = 1;
+    BLOCKER_POWER_CYCLE = 2;
+    BLOCKER_PREREQUISITES_LOW_BATTERY = 3;
+    BLOCKER_PREREQUISITES_REMOTE_DISCONNECTED = 4;
+    BLOCKER_PREREQUISITES_REMOTE_UNDOCKED = 5;
+  }
+  message Entity {
+    string entity_id = 1;
+    logi.protocol.dfu.Progress.State state = 2;
+    repeated logi.protocol.dfu.Progress.Blocker required_actions = 3;
+    logi.protocol.dfu.Progress.ErrorCode error_code = 4;
+    float state_progress_value = 5;
+    float progress_value = 6;
+  }
+  message Stage {
+    logi.protocol.dfu.Progress.State state = 1;
+    uint64 initial_delay = 2;
+    uint64 post_delay = 3;
+    uint64 duration = 4;
+    uint64 timeout = 5;
+    logi.protocol.dfu.Progress.State next_state = 6;
+  }
+  map<string, logi.protocol.dfu.Progress.Entity> entities_progression = 1;
+  float total_progress = 2;
+}
+message Package {
+  message Content {
+    message InterfaceInfo {
+      message VersionRange {
+        string min_version = 1;
+        string max_version = 2;
+        repeated string version_set = 3;
+      }
+      message RevisionRange {
+        uint32 min_revision = 1;
+        uint32 max_revision = 2;
+        repeated uint32 revision_set = 3;
+      }
+      string interface_id = 1;
+      logi.protocol.devices.Device.Interface.Type device_interface_type = 2;
+      logi.protocol.devices.Receiver.Interface.Type receiver_interface_type = 3;
+      bool updatable = 4;
+      bool force = 5;
+      bool skip_fw_check = 6;
+      logi.protocol.dfu.Package.Content.InterfaceInfo.VersionRange target_version = 10;
+      logi.protocol.dfu.Package.Content.InterfaceInfo.RevisionRange target_firmware_revision = 11;
+      logi.protocol.dfu.Package.Content.InterfaceInfo.RevisionRange target_hardware_revision = 12;
+      repeated string target_entity = 13;
+      string target_firmware_name = 14;
+      repeated logi.protocol.devices.Receiver.Info.Basic required_intermediary_interfaces = 15;
+    }
+    message BinaryFile {
+      string key = 1;
+      string hash = 2;
+    }
+    repeated logi.protocol.dfu.Package.Content.InterfaceInfo interface_infos = 1;
+    string version = 2;
+    logi.protocol.dfu.Package.Content.BinaryFile binary_file_key = 3;
+    map<uint32, logi.protocol.dfu.Package.Content.BinaryFile> binary_file_keys = 4;
+    string id = 5;
+    repeated string dependencies = 6;
+    bool is_downgrade = 7;
+    bool restart_all_entities = 8;
+    bool skip_bootloader_version_check = 9;
+  }
+  message ExternalContent {
+    repeated logi.protocol.dfu.Package.Content.InterfaceInfo interface_infos = 1;
+    string version = 2;
+    string download_url = 3;
+    bool for_windows = 4;
+    bool for_osx = 5;
+  }
+  repeated logi.protocol.dfu.Package.Content contents = 1;
+  logi.protocol.dfu.Package.ExternalContent external_content = 2;
+  repeated logi.protocol.dfu.Start.Blocker start_blockers = 3;
+  repeated logi.protocol.dfu.Start.Warning start_warnings = 4;
+  bool update_required = 5;
+  repeated logi.protocol.dfu.Progress.Stage stages = 6;
+  bool must_check_all_contents = 7;
+  string package_hash = 8;
+}

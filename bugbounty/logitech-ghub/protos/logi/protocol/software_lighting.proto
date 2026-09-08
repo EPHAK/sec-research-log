@@ -1,0 +1,467 @@
+syntax = "proto3";
+package logi.protocol.software_lighting;
+import "logi/common_protocol/applications.proto";
+import "logi/protocol/keyboard.proto";
+import "logi/common_protocol/lighting_support.proto";
+import "logi/protocol/screen_sampler.proto";
+import "logi/common_protocol/util.proto";
+
+message CardSettings {
+  map<string, logi.protocol.lighting_support.Device.Category> devices = 1;
+  repeated logi.protocol.software_lighting.Effect.Metadata.Interface effects = 2;
+  map<string, logi.protocol.lighting_support.Device.Category> power_saving_devices = 3;
+  repeated logi.protocol.software_lighting.Effect.Metadata.Interface power_saving_effects = 4;
+}
+message Source {
+  message Interface {
+    string id = 1;
+    logi.protocol.applications.Application application = 2;
+  }
+}
+message Layer {
+  enum Type {
+    INVALID_LAYER = 0;
+    INTERNAL_RESERVED = 1;
+    EVENT = 2;
+    INTERNAL_EVENT = 3;
+    OVERLAY = 4;
+    INTERNAL_OVERLAY = 5;
+    STANDARD = 6;
+    INTERNAL_STANDARD = 7;
+    INTERNAL_DEFAULT = 8;
+  }
+  enum Priority {
+    DEFAULT = 0;
+    MAXIMUM = 1;
+    HIGH = 2;
+    NORMAL = 3;
+    LOW = 4;
+    MINIMUM = 5;
+  }
+  enum Focus {
+    UNKNOWN_FOCUS = 0;
+    FOREGROUND = 1;
+    BACKGROUND = 2;
+    UNDERGROUND = 3;
+  }
+  message Interface {
+    string source_id = 1;
+    logi.protocol.software_lighting.Layer.Type layer_type = 2;
+    logi.protocol.software_lighting.Layer.Priority priority = 3;
+    logi.protocol.software_lighting.Layer.Focus focus = 4;
+  }
+}
+message Effect {
+  enum Direction {
+    INVALID_DIRECTION = 0;
+    CYCLE = 1;
+    REVERSE_CYCLE = 2;
+    BOUNCE = 3;
+    RANDOM = 4;
+  }
+  enum Type {
+    INVALID_TYPE = 0;
+    FIXED = 1;
+    COLOR_CYCLE = 2;
+    COLOR_WAVE = 3;
+    STARLIGHT = 4;
+    ECHO_PRESS = 5;
+    KEYFRAME = 6;
+    HEATMAP = 7;
+    AUDIO_VISUALIZER = 8;
+    SCREEN_SAMPLER = 9;
+    LEGACY_SDK = 10;
+    COMMAND = 11;
+    SOLID = 12;
+    QUICK_MACRO_RECORDING = 13;
+    SMOOTH_STAR = 14;
+    SMOOTH_WAVE = 15;
+    SIGNATURE_ALGORITHMIC_ACTIVE = 16;
+    SIGNATURE_ALGORITHMIC_INACTIVE = 17;
+    SIGNATURE_HARDCODED_ACTIVE = 18;
+    SIGNATURE_HARDCODED_INACTIVE = 19;
+    ACTUATION_POINT_IMMERSIVE = 20;
+  }
+  message Prefab {
+    string id = 1;
+    logi.protocol.software_lighting.Effect.Type type = 2;
+    repeated logi.protocol.lighting_support.Device.Category device_support = 3;
+    string info_path = 4;
+    string name = 5;
+    bool read_only = 6;
+    bool default = 7;
+    string application_id = 8;
+  }
+  message Prefabs {
+    repeated logi.protocol.software_lighting.Effect.Prefab list = 1;
+  }
+  message Preset {
+    string name = 1;
+    repeated logi.protocol.lighting_support.Device.Category device_support = 2;
+    logi.protocol.software_lighting.Effect.Metadata values = 3;
+  }
+  message Presets {
+    message Collection {
+      repeated logi.protocol.software_lighting.Effect.Presets list = 1;
+    }
+    string id = 1;
+    logi.protocol.software_lighting.Effect.Type type = 2;
+    repeated logi.protocol.software_lighting.Effect.Preset list = 3;
+  }
+  message Info {
+    message Interface {
+      string id = 1;
+      string source_id = 2;
+      logi.protocol.software_lighting.Effect.Info info = 3;
+    }
+    repeated logi.protocol.lighting_support.Device.Category device_support = 1;
+    logi.protocol.software_lighting.FixedEffect.Info fixed_info = 2;
+    logi.protocol.software_lighting.KeyframeEffect.Info keyframe_info = 3;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Info audio_visualizer_info = 4;
+    logi.protocol.software_lighting.ScreenSamplerEffect.Info screen_sampler_info = 5;
+    logi.protocol.software_lighting.CommandEffect.Info command_info = 6;
+  }
+  message Metadata {
+    message Interface {
+      string id = 1;
+      string source_id = 2;
+      logi.protocol.software_lighting.Layer.Type layer_type = 3;
+      uint32 z_index = 4;
+      logi.protocol.software_lighting.Effect.Metadata metadata = 6;
+    }
+    repeated string supported_devices = 1;
+    repeated logi.protocol.lighting_support.Device.Category device_support = 2;
+    repeated logi.protocol.lighting_support.Zone.Type support_zone_types = 3;
+    repeated logi.protocol.lighting_support.PerKey.Type support_per_key_types = 4;
+    uint32 duration = 5;
+    logi.protocol.software_lighting.Effect.Type type = 6;
+    logi.protocol.software_lighting.FixedEffect.Metadata fixed_metadata = 10;
+    logi.protocol.software_lighting.ColorCycleEffect.Metadata color_cycle_metadata = 11;
+    logi.protocol.software_lighting.ColorWaveEffect.Metadata color_wave_metadata = 12;
+    logi.protocol.software_lighting.StarlightEffect.Metadata starlight_metadata = 13;
+    logi.protocol.software_lighting.EchoPressEffect.Metadata echo_press_metadata = 14;
+    logi.protocol.software_lighting.KeyframeEffect.Metadata keyframe_metadata = 15;
+    logi.protocol.software_lighting.HeatmapEffect.Metadata heatmap_metadata = 16;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Metadata audio_visualizer_metadata = 17;
+    logi.protocol.software_lighting.ScreenSamplerEffect.Metadata screen_sampler_metadata = 18;
+    logi.protocol.software_lighting.LegacySDKEffect.Metadata legacysdk_metadata = 19;
+    logi.protocol.software_lighting.CommandEffect.Metadata command_metadata = 20;
+    logi.protocol.software_lighting.SolidEffect.Metadata solid_metadata = 21;
+    logi.protocol.software_lighting.QuickMacroRecordingEffect.Metadata quick_macro_recording_metadata = 22;
+    logi.protocol.software_lighting.SignatureAlgorithmicEffect.Metadata smooth_star_metadata = 23;
+    logi.protocol.software_lighting.SignatureAlgorithmicEffect.Metadata smooth_wave_metadata = 24;
+    logi.protocol.software_lighting.SignatureAlgorithmicEffect.Metadata signature_algorithmic_active_metadata = 25;
+    logi.protocol.software_lighting.SignatureAlgorithmicEffect.Metadata signature_algorithmic_inactive_metadata = 26;
+    logi.protocol.software_lighting.SignatureHardcodedEffect.Metadata signature_hardcoded_active_metadata = 27;
+    logi.protocol.software_lighting.SignatureHardcodedEffect.Metadata signature_hardcoded_inactive_metadata = 28;
+    logi.protocol.software_lighting.ActuationPointImmersiveEffect.Metadata actuation_point_immersive_metadata = 29;
+  }
+  message Package {
+    logi.protocol.software_lighting.Effect.Prefab prefab = 1;
+    logi.protocol.software_lighting.Effect.Info info = 2;
+  }
+  message Packages {
+    repeated logi.protocol.software_lighting.Effect.Package list = 1;
+  }
+  message Viewer {
+    message Action {
+      enum Type {
+        INVALID_ACTION = 0;
+        START = 1;
+        STOP = 2;
+        PAUSE = 3;
+        RESUME = 4;
+      }
+      logi.protocol.software_lighting.Effect.Viewer.Action.Type type = 1;
+    }
+    repeated string devices = 1;
+    logi.protocol.software_lighting.Effect.Package effect_package = 2;
+    logi.protocol.software_lighting.Effect.Metadata effect_metadata = 3;
+    logi.protocol.util.Enable streaming = 4;
+    logi.protocol.software_lighting.Effect.Viewer.Action.Type action_type = 5;
+    logi.protocol.lighting_support.Slots.State state = 6;
+  }
+}
+message Effects {
+  repeated logi.protocol.software_lighting.Effect.Metadata.Interface metadata_interfaces = 1;
+}
+message SolidEffect {
+  message Metadata {
+    logi.protocol.util.Color color = 1;
+  }
+}
+message FixedEffect {
+  message Info {
+    logi.protocol.lighting_support.Slots lighting_slots = 1;
+  }
+  message Metadata {
+    repeated logi.protocol.util.Color replacement_colors = 1;
+  }
+}
+message LegacySDKEffect {
+  message Metadata {
+  }
+}
+message ColorCycleEffect {
+  message Metadata {
+    uint32 index = 1;
+    repeated logi.protocol.util.Color colors = 2;
+    logi.protocol.util.Easing.Type curve_type = 3;
+    uint32 speed = 4;
+    uint32 delay = 5;
+    logi.protocol.software_lighting.Effect.Direction direction = 6;
+    uint32 loops = 7;
+  }
+}
+message ColorWaveEffect {
+  message Metadata {
+  }
+}
+message ScreenSamplerEffect {
+  message Info {
+    map<string, logi.protocol.screen_sampler.Region> region_map = 1;
+    logi.protocol.lighting_support.Slots lighting_slots = 2;
+  }
+  message Metadata {
+    float color_boost = 1;
+    bool smoothing = 2;
+    logi.protocol.util.Color background_color = 3;
+    string active_sample_region = 4;
+  }
+  message Preview {
+    string url = 1;
+  }
+}
+message StarlightEffect {
+  message Metadata {
+    logi.protocol.util.Color star_color = 1;
+    logi.protocol.util.Color sky_color = 2;
+    uint32 star_count = 3;
+    logi.protocol.util.Easing.Type in_curve = 4;
+    logi.protocol.util.Easing.Type out_curve = 5;
+    uint32 speed = 6;
+  }
+}
+message EchoPressEffect {
+  message Metadata {
+    logi.protocol.util.Color echo_color = 1;
+    logi.protocol.util.Color rest_color = 2;
+    uint32 echo_count = 3;
+    logi.protocol.util.Easing.Type in_curve = 4;
+    logi.protocol.util.Easing.Type out_curve = 5;
+    uint32 speed = 6;
+  }
+}
+message QuickMacroRecordingEffect {
+  message Metadata {
+    logi.protocol.util.Color highlight_color = 1;
+    logi.protocol.util.Color background_color = 2;
+    logi.protocol.keyboard.Keyboard.GKeyLayout gkey_layout = 3;
+  }
+}
+message KeyframeEffect {
+  message Frame {
+    logi.protocol.util.Easing.Type curve_type = 1;
+    uint32 length = 2;
+    logi.protocol.lighting_support.Slots lighting_slots = 3;
+  }
+  message Info {
+    map<uint32, logi.protocol.software_lighting.KeyframeEffect.Frame> keyframe_map = 1;
+    uint32 speed = 2;
+    logi.protocol.software_lighting.Effect.Direction direction = 3;
+  }
+  message Metadata {
+    uint32 index = 1;
+    uint32 speed = 2;
+    logi.protocol.software_lighting.Effect.Direction direction = 3;
+    repeated logi.protocol.util.Color replacement_colors = 4;
+    uint32 loops = 5;
+  }
+}
+message HeatmapEffect {
+  message Metadata {
+  }
+}
+message SignatureAlgorithmicEffect {
+  message Metadata {
+    uint32 index = 1;
+    logi.protocol.util.Color primary_color = 2;
+    logi.protocol.util.Color secondary_color = 3;
+    logi.protocol.lighting_support.Effect.Type effect_type = 4;
+    float brightness = 5;
+  }
+}
+message AudioVisualizerEffect {
+  message Options {
+    message Audio {
+      bool adaptive_max_amplitude = 1;
+      float custom_max_amplitude = 2;
+      float bass_noise_threshold = 3;
+      float mid_high_noise_threshold = 4;
+      float boost_amount = 5;
+    }
+  }
+  message Mode {
+    message Animation {
+      message Bar {
+        bool smooth_animation = 1;
+        bool show_clip_zone = 2;
+        float clip_zone_threshold = 3;
+        logi.protocol.util.Color clip_zone_color = 4;
+      }
+    }
+    message Color {
+      message Fixed {
+        logi.protocol.util.Color color = 1;
+      }
+      message Gradient {
+        repeated logi.protocol.util.Color color_gradient = 1;
+      }
+      message Reactive {
+        logi.protocol.util.Color color_low = 1;
+        logi.protocol.util.Color color_high = 2;
+      }
+    }
+  }
+  message Frequency {
+    enum Value {
+      INVALID = 0;
+      LOW_1HZ = 1;
+      LOW_16HZ = 16;
+      LOW_32HZ = 32;
+      LOW_60HZ = 60;
+      LOW_170HZ = 170;
+      LOW_310HZ = 310;
+      MID_600HZ = 600;
+      MID_1000HZ = 1000;
+      MID_1500HZ = 1500;
+      MID_2000HZ = 2000;
+      MID_2500HZ = 2500;
+      MID_3000HZ = 3000;
+      MID_3500HZ = 3500;
+      HIGH_4000HZ = 4000;
+      HIGH_4500HZ = 4500;
+      HIGH_5000HZ = 5000;
+      HIGH_5500HZ = 5500;
+      HIGH_6000HZ = 6000;
+      HIGH_6500HZ = 6500;
+      HIGH_7000HZ = 7000;
+      HIGH_7500HZ = 7500;
+      HIGH_8000HZ = 8000;
+      HIGH_8500HZ = 8500;
+      HIGH_9000HZ = 9000;
+      HIGH_9500HZ = 9500;
+      HIGH_10000HZ = 10000;
+    }
+    message Range {
+      logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Value start = 1;
+      logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Value end = 2;
+    }
+    message Entry {
+      repeated logi.protocol.lighting_support.Slot slots = 1;
+      bool ordered = 2;
+      logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Range range = 3;
+      bool standalone_gradient = 4;
+    }
+  }
+  message Info {
+    repeated logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Entry frequency_layout = 1;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Range frequency_default_range = 2;
+  }
+  message Metadata {
+    logi.protocol.software_lighting.AudioVisualizerEffect.Frequency.Range frequency_default_range = 1;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Options.Audio audio_options = 2;
+    logi.protocol.util.Color background_color = 3;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Mode.Animation.Bar animation_mode_bar = 4;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Mode.Color.Fixed color_mode_fixed = 5;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Mode.Color.Gradient color_mode_gradient = 6;
+    logi.protocol.software_lighting.AudioVisualizerEffect.Mode.Color.Reactive color_mode_reactive = 7;
+  }
+}
+message CommandEffect {
+  message Info {
+    map<uint32, logi.protocol.lighting_support.Slots> macro_color_map = 1;
+    map<uint32, logi.protocol.lighting_support.Slots> gshift_macro_color_map = 2;
+    map<uint32, logi.protocol.lighting_support.Slots> command_color_map = 3;
+    bool has_hid_assignments = 4;
+  }
+  message Metadata {
+    repeated logi.protocol.util.Color category_colors = 1;
+    uint32 mode = 2;
+  }
+}
+message SignatureHardcodedEffect {
+  message Metadata {
+    uint32 index = 1;
+    logi.protocol.lighting_support.Effect.Type effect_type = 2;
+  }
+}
+message ActuationPointImmersiveEffect {
+  message Metadata {
+    map<uint32, uint32> control_id_to_hid_code = 1;
+    map<uint32, bool> analog_switch_state = 2;
+    uint32 maximum_travel_distance = 3;
+  }
+}
+message DeviceSave {
+  message Event {
+    enum State {
+      INVALID = 0;
+      PREPARING = 1;
+      DOWNLOADING = 2;
+      DOWNLOADED = 3;
+      ABORTED = 4;
+      FAILED = 5;
+    }
+    enum Error {
+      NONE = 0;
+      UNKNOWN = 1;
+      NOT_ENOUGH_MEMORY = 2;
+      INVALID_EFFECT = 3;
+      INVALID_EFFECT_PARAMS = 4;
+      DEVICE_TIMEOUT = 5;
+    }
+    string device_id = 1;
+    string effect_uid = 2;
+    logi.protocol.software_lighting.DeviceSave.Event.State state = 3;
+    logi.protocol.software_lighting.DeviceSave.Event.Error error = 4;
+    float progress = 5;
+  }
+  uint32 effect_slot = 1;
+  logi.protocol.software_lighting.Effect.Metadata.Interface metadata_interface = 2;
+}
+message Lamparray {
+  message Device {
+    enum Status {
+      INVALID = 0;
+      NOT_SUPPORTED = 1;
+      UNINITIALIZED = 2;
+      UNAVAILABLE = 3;
+      ACTIVE = 4;
+      INACTIVE = 5;
+      ERROR = 6;
+      NEEDS_REBOOT = 7;
+      ONBOARD_MODE = 8;
+    }
+    logi.protocol.software_lighting.Lamparray.Device.Status status = 1;
+    string device_id = 2;
+  }
+  message GetStatus {
+    string device_id = 1;
+  }
+  message SetWdl {
+    message Status {
+      enum Code {
+        INVALID = 0;
+        REQUIRES_GLOBAL_WDL = 1;
+      }
+      logi.protocol.software_lighting.Lamparray.SetWdl.Status.Code code = 1;
+    }
+    string device_id = 1;
+    bool active = 2;
+  }
+  message AutonomousMode {
+    string device_id = 1;
+    bool active = 2;
+  }
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package logi.updater_ipc.protocol.protobuf;
+
+message Envelope {
+  enum FlagValues {
+    NONE = 0;
+    ERROR = 1;
+    EXPECTS_REPLY = 2;
+  }
+  uint32 message_id = 1;
+  uint32 in_response_to_id = 2;
+  logi.updater_ipc.protocol.protobuf.Envelope.FlagValues flags = 3;
+  uint32 content_type = 4;
+  bytes content_data = 5;
+}

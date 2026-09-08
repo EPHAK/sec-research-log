@@ -1,0 +1,182 @@
+syntax = "proto3";
+package logi.protocol.lighting_support;
+import "logi/common_protocol/util.proto";
+
+message Lighting {
+  enum Type {
+    INVALID_LIGHTING = 0;
+    ZONAL = 1;
+    PER_KEY = 2;
+  }
+  message Mode {
+    enum Control {
+      FIRMWARE = 0;
+      SOFTWARE = 1;
+      LAMPARRAY = 2;
+      POWER_SAVING = 3;
+      LOW_BATTERY = 4;
+      EDITOR = 5;
+      DOWNLOADING = 6;
+      HIGH_REPORT_RATE = 7;
+      SLEEP = 8;
+      TEST = 9;
+      FIRMWARE_CONTROL = 10;
+    }
+    enum Source {
+      PROFILE = 0;
+      EFFECT_TESTER = 1;
+      LEGACY_LED_SDK = 2;
+      LOW_BATTERY_WARNING = 3;
+      DEVICE_INACTIVITY = 4;
+      MACHINE_SLEEP = 5;
+      LED_SDK = 6;
+      BATTERY_INDICATOR = 7;
+      QUICK_MACRO_RECORDING = 8;
+      TESTING = 9;
+      EFFECT_DOWNLOADER = 10;
+      LAMPARRAY_LIGHTING = 11;
+      HIGH_REPORT_RATE_LIMITATION = 12;
+      FIRMWARE_NV_EFFECT = 13;
+      ACTUATION_POINT = 14;
+    }
+    logi.protocol.lighting_support.Lighting.Mode.Control control = 1;
+    bool enabled = 2;
+    repeated logi.protocol.lighting_support.Lighting.Mode.Source sources = 3;
+  }
+}
+message Color {
+  enum Type {
+    INVALID_COLOR = 0;
+    MONO = 16;
+    RGB = 32;
+    COLOR_FULL_SUPPORT = 255;
+  }
+  message Palette {
+    repeated logi.protocol.util.Color colors = 1;
+  }
+}
+message Device {
+  enum Type {
+    INVALID_DEVICE = 0;
+    MOUSE = 256;
+    KEYBOARD = 512;
+    HEADSET = 1024;
+    SPEAKER = 2048;
+    GAMEBOARD = 4096;
+    MOUSEPAD = 8192;
+    MICROPHONE = 16384;
+    ILLUMINATION_LIGHT = 32768;
+    DEVICE_FULL_SUPPORT = 16776960;
+  }
+  enum Category {
+    INVALID_CATEGORY = 0;
+    MOUSE_MONO_ZONAL = 273;
+    MOUSE_RGB_ZONAL = 289;
+    MOUSE_RGB_PER_KEY = 290;
+    KEYBOARD_MONO_ZONAL = 529;
+    KEYBOARD_RGB_ZONAL = 545;
+    KEYBOARD_MONO_PER_KEY = 530;
+    KEYBOARD_RGB_PER_KEY = 546;
+    HEADSET_RGB_ZONAL = 1057;
+    HEADSET_RGB_PER_KEY = 1058;
+    SPEAKER_RGB_ZONAL = 2081;
+    GAMEBOARD_RGB_ZONAL = 4129;
+    MOUSEPAD_RGB_ZONAL = 8225;
+    MICROPHONE_RGB_ZONAL = 16417;
+    MICROPHONE_RGB_PER_KEY = 16418;
+    ILLUMINATION_LIGHT_RGB_PER_KEY = 32802;
+    CATEGORY_FULL_SUPPORT = 16777215;
+  }
+}
+message Zone {
+  enum Type {
+    ZONE_INVALID = 0;
+    ZONE_ALL = 1;
+    ZONE_PRIMARY = 2;
+    ZONE_BRANDING = 4;
+    ZONE_ONE = 8;
+    ZONE_TWO = 16;
+    ZONE_THREE = 32;
+    ZONE_FOUR = 64;
+    ZONE_FIVE = 128;
+    ZONE_SIX = 256;
+    ZONE_SEVEN = 512;
+    ZONE_LEFT_SIDE = 1024;
+    ZONE_RIGHT_SIDE = 2048;
+    ZONE_COMBINED = 4096;
+    ZONE_TOP = 8192;
+    ZONE_BOTTOM = 16384;
+    ZONE_HALO = 32768;
+    ZONE_IDLE_STATE = 129;
+    ZONE_IN_USE_STATE = 130;
+    ZONE_MUTED_STATE = 131;
+    ZONE_SOFT_MUTED_STATE = 132;
+    ZONE_FULL_SUPPORT = 65535;
+  }
+}
+message PerKey {
+  enum Type {
+    PERKEY_INVALID = 0;
+    PERKEY_KEYBOARD = 1;
+    PERKEY_CONSUMER = 2;
+    PERKEY_GKEY = 4;
+    PERKEY_GENERIC = 8;
+    PERKEY_BRANDING = 16;
+    PERKEY_INDICATOR = 32;
+    PERKEY_COSMETIC = 64;
+    PERKEY_COSMETIC_2 = 128;
+    PERKEY_COSMETIC_3 = 256;
+    PERKEY_COSMETIC_4 = 512;
+    PERKEY_FULL_SUPPORT = 65535;
+  }
+}
+message Persistence {
+  message CustomEffects {
+    uint32 slots = 1;
+    uint32 entity_offset = 2;
+  }
+  bool zone_effects = 1;
+  bool per_key_fixed = 2;
+  logi.protocol.lighting_support.Persistence.CustomEffects custom_effects = 3;
+}
+message Slots {
+  message Info {
+    message CodeMap {
+      map<uint32, logi.protocol.util.Color> color_code_map = 1;
+    }
+    logi.protocol.util.Color zone_color = 1;
+    logi.protocol.lighting_support.Slots.Info.CodeMap per_key_map = 2;
+  }
+  message State {
+    map<string, logi.protocol.lighting_support.Slots> device_states = 1;
+    logi.protocol.util.Time time = 2;
+  }
+  map<string, logi.protocol.lighting_support.Slots.Info> info_map = 1;
+  bool persistent = 2;
+}
+message Slot {
+  logi.protocol.lighting_support.Lighting.Type lighting_type = 1;
+  logi.protocol.lighting_support.PerKey.Type per_key_type = 2;
+  logi.protocol.lighting_support.Zone.Type zone_type = 3;
+  uint32 slot_code = 4;
+}
+message Mapping {
+  message LedMap {
+    uint32 led_index = 1;
+  }
+  message PerKeyMap {
+    logi.protocol.lighting_support.PerKey.Type type = 1;
+    map<uint32, logi.protocol.lighting_support.Mapping.LedMap> mapping = 2;
+  }
+  map<string, logi.protocol.lighting_support.Mapping.PerKeyMap> per_key = 1;
+}
+message Effect {
+  enum Type {
+    SMOOTH_STAR = 0;
+    PULSAR_POINT = 1;
+    G_3_SERIES = 2;
+    REMIND_ME_OF = 3;
+    NEON = 4;
+    OUTER_SPACE = 5;
+  }
+}

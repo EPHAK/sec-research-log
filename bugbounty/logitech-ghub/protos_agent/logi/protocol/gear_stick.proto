@@ -1,0 +1,29 @@
+syntax = "proto3";
+package logi.protocol.gear_stick;
+
+enum Id {
+  INVALID_ID = 0;
+  REVERSE = 1;
+  FIRST = 2;
+  SECOND = 3;
+  THIRD = 4;
+  FOURTH = 5;
+  FIFTH = 6;
+  SIXTH = 7;
+  SEVENTH = 8;
+}
+message Mapping {
+  logi.protocol.gear_stick.Id gear_id = 1;
+  uint32 index = 2;
+}
+message Capabilities {
+  repeated logi.protocol.gear_stick.Mapping gears = 1;
+}
+message Calibration {
+  enum Status {
+    SUCCESS = 0;
+    FAILED = 1;
+  }
+  logi.protocol.gear_stick.Id gear_id = 1;
+  logi.protocol.gear_stick.Calibration.Status status = 2;
+}

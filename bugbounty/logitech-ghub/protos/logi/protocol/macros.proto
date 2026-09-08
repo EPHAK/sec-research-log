@@ -1,0 +1,396 @@
+syntax = "proto3";
+package logi.protocol.macros;
+import "google/protobuf/struct.proto";
+import "logi/protocol/media.proto";
+import "logi/protocol/input_tracker.proto";
+import "logi/common_protocol/util.proto";
+
+message Macro {
+  enum Type {
+    INVALID = 0;
+    KEYSTROKE = 1;
+    TEXT_BLOCK = 2;
+    MOUSE = 3;
+    SYSTEM = 4;
+    APP = 5;
+    AUDIO = 6;
+    MEDIA = 7;
+    SEQUENCE = 8;
+    LIGHTING = 9;
+    GHUB = 10;
+    ACTION = 11;
+    DEVICE = 12;
+    QUICK_LAUNCH = 13;
+    OPEN_FILE_FOLDER = 16;
+    OPEN_WEB_PAGE = 17;
+    SCREEN_CAPTURE = 19;
+    AUDIO_SETTINGS = 21;
+    AUDIO_SAMPLE = 22;
+    ILLUMINATION_LIGHT_PRESET = 23;
+    ILLUMINATION_LIGHT = 24;
+    LPS_ACTION = 25;
+    PROFILES = 26;
+  }
+  message Validation {
+    enum Code {
+      INVALID = 0;
+      KEY_UP_BEFORE_DOWN = 1;
+      KEY_DOWN_NO_UP = 2;
+      MOUSE_BUTTON_UP_BEFORE_DOWN = 3;
+      MOUSE_BUTTON_DOWN_NO_UP = 4;
+    }
+    bool is_valid = 1;
+    bool is_onboardable = 2;
+    logi.protocol.macros.Macro.Validation.Code code = 3;
+  }
+  message QuickLaunch {
+    enum Action {
+      CALCULATOR = 0;
+    }
+    logi.protocol.macros.Macro.QuickLaunch.Action action = 1;
+  }
+  message GHub {
+    enum Action {
+      INVALID = 0;
+      CYCLE_GHUB_PROFILE = 1;
+      TOGGLE_AUTO_PROFILE_SWITCHING = 4;
+    }
+    logi.protocol.macros.Macro.GHub.Action action = 1;
+  }
+  message Profiles {
+    enum Action {
+      INVALID = 0;
+      NAVIGATE_NEXT_CYCLE = 1;
+      NAVIGATE_REVERSE_CYCLE = 2;
+      NAVIGATE_DOWN = 3;
+      NAVIGATE_UP = 4;
+      NAVIGATE_GO_TO = 5;
+      NAVIGATE_BACK = 6;
+      NAVIGATE_HOME = 7;
+    }
+    message NavigationParams {
+      string activity_id = 1;
+      uint32 order_index = 2;
+    }
+    logi.protocol.macros.Macro.Profiles.Action action = 1;
+    logi.protocol.macros.Macro.Profiles.NavigationParams navigation_params = 2;
+  }
+  message Keystroke {
+    uint32 code = 1;
+    repeated uint32 modifiers = 2;
+    string display_character = 3;
+  }
+  message TextBlock {
+    string text = 1;
+  }
+  message Mouse {
+    enum Action {
+      INVALID = 0;
+      DPI_UP = 1;
+      DPI_DOWN = 2;
+      DPI_SHIFT = 3;
+      DPI_CYCLE = 4;
+      DPI_DEFAULT = 5;
+      BUTTON = 6;
+      BUTTON_DOUBLE_CLICK = 8;
+      WHEEL_UP = 9;
+      WHEEL_DOWN = 10;
+      WHEEL_LEFT = 11;
+      WHEEL_RIGHT = 12;
+      DPI_GO_TO_SHIFT = 14;
+      WHEEL_MODE_TOGGLE = 15;
+      RATCHET_FORCE_CYCLE = 16;
+    }
+    logi.protocol.macros.Macro.Mouse.Action action = 1;
+    uint32 hid_usage = 2;
+  }
+  message Media {
+    logi.protocol.media.Usage usage = 1;
+  }
+  message System {
+    enum Action {
+      INVALID = 0;
+      CLOSE = 1;
+      MINIMIZE = 2;
+      MAXIMIZE = 3;
+      FULLSCREEN = 4;
+      COPY = 5;
+      PASTE = 6;
+      UNDO = 7;
+      REDO = 8;
+      DESKTOP = 9;
+      FILE_CLIENT = 10;
+      INTERNET_CLIENT = 11;
+      MAIL_CLIENT = 12;
+      MEDIA_CLIENT = 13;
+      CONSOLE_CLIENT = 14;
+      ZOOM_IN = 15;
+      ZOOM_OUT = 16;
+      SCROLL_LEFT = 17;
+      SCROLL_RIGHT = 18;
+      SNAP_LEFT = 19;
+      SNAP_RIGHT = 20;
+      MISSION_CONTROL = 21;
+      APP_EXPOSE = 22;
+      SWITCH_BETWEEN_DESKTOPS = 23;
+      NONE = 24;
+      SWITCH_APPS = 25;
+      SHIFT_SWITCH_APPS = 26;
+      BRIGHTNESS_UP = 27;
+      BRIGHTNESS_DOWN = 28;
+      LAUNCH_PAD = 29;
+      SHOW_DESKTOP = 30;
+      BACKLIGHT_DOWN = 31;
+      BACKLIGHT_UP = 32;
+      SCREEN_CAPTURE = 33;
+      LOOK_UP = 34;
+      LOCK = 35;
+      APP_MENU = 36;
+    }
+    logi.protocol.macros.Macro.System.Action action = 1;
+  }
+  message App {
+    string executable_path = 1;
+    string working_directory_path = 2;
+    repeated string argument_list = 4;
+  }
+  message OpenWebPage {
+    string url = 1;
+    bool show_ui = 2;
+  }
+  message Audio {
+    enum Action {
+      INVALID = 0;
+      MUTE_SPEAKERS = 1;
+      MUTE_MICROPHONE = 2;
+      MICROPHONE_GAIN_INCREASE = 3;
+      MICROPHONE_GAIN_DECREASE = 4;
+      SIDETONE_INCREASE = 5;
+      SIDETONE_DECREASE = 6;
+      BASS_INCREASE = 7;
+      BASS_DECREASE = 8;
+      TREBLE_INCREASE = 9;
+      TREBLE_DECREASE = 10;
+      ADVANCED_EQ_TOGGLE = 11;
+      SURROUND_TOGGLE = 12;
+      EQUALIZER_CYCLE = 13;
+      SPEAKER_DEVICE_CYCLE = 14;
+      MICROPHONE_DEVICE_CYCLE = 15;
+      MAKE_DEFAULT_SOURCE = 16;
+    }
+    logi.protocol.macros.Macro.Audio.Action action = 1;
+    bool audio_device_only = 2;
+    string device_slot_prefix = 3;
+  }
+  message Sequence {
+    message Keyboard {
+      uint32 hid_usage = 1;
+      bool is_down = 2;
+    }
+    message Delay {
+      uint32 duration_ms = 1;
+    }
+    message Component {
+      logi.protocol.input_tracker.Event.Keyboard keyboard = 1;
+      logi.protocol.macros.Macro.Sequence.Delay delay = 2;
+      logi.protocol.macros.Macro.TextBlock text_block = 3;
+      logi.protocol.input_tracker.Event.Mouse mouse = 4;
+      logi.protocol.macros.Macro.Keystroke keystroke = 5;
+      logi.protocol.macros.Macro.Mouse mouse_macro = 6;
+      logi.protocol.macros.Macro.System system = 7;
+      logi.protocol.macros.Macro.App app = 8;
+      logi.protocol.macros.Macro.Audio audio = 9;
+      logi.protocol.macros.Macro.Media media = 10;
+      logi.protocol.macros.Macro.Lighting lighting = 11;
+      logi.protocol.macros.Macro.GHub ghub = 12;
+      logi.protocol.macros.Macro.Action action = 13;
+      logi.protocol.macros.Macro.Device device = 14;
+      logi.protocol.macros.Macro.IlluminationLight illumination_light = 15;
+      logi.protocol.macros.Macro.LpsAction lps_action = 16;
+      logi.protocol.macros.Macro.Type type = 20;
+      string name = 21;
+      logi.protocol.macros.Macro.Profiles profiles = 22;
+    }
+    message StateSequence {
+      repeated logi.protocol.macros.Macro.Sequence.Component components = 1;
+      bool interruptible = 2;
+    }
+    logi.protocol.macros.Macro.Sequence.StateSequence simple_sequence = 1;
+    logi.protocol.macros.Macro.Sequence.StateSequence press_sequence = 2;
+    logi.protocol.macros.Macro.Sequence.StateSequence held_sequence = 3;
+    logi.protocol.macros.Macro.Sequence.StateSequence release_sequence = 4;
+    logi.protocol.macros.Macro.Sequence.StateSequence toggle_sequence = 5;
+    bool use_default_delay = 6;
+    uint32 default_delay = 7;
+    bool use_toggle_actions = 8;
+    bool use_simple_actions = 9;
+    bool use_repeat_actions = 10;
+    bool show_up_down = 11;
+  }
+  message Lighting {
+    enum Action {
+      INVALID = 0;
+      CYCLE_FIRMWARE_BRIGHTNESS = 1;
+      CYCLE_SOFTWARE_BRIGHTNESS = 2;
+      CYCLE_LIGHTSYNC_ONOFF = 3;
+      CYCLE_LIGHTSYNC_ON = 4;
+      CYCLE_LIGHTSYNC_OFF = 5;
+      CYCLE_LIGHTSYNC_AND_ILLUMINATION_ONOFF = 6;
+      CYCLE_LIGHTSYNC_AND_ILLUMINATION_ON = 7;
+      CYCLE_LIGHTSYNC_AND_ILLUMINATION_OFF = 8;
+    }
+    logi.protocol.macros.Macro.Lighting.Action action = 1;
+    bool firmware_lighting_action = 2;
+  }
+  message Action {
+    string action_id = 1;
+    map<string, string> parameters = 2;
+    map<string, string> erroneous_parameters = 3;
+    string integration_id = 4;
+  }
+  message Device {
+    enum Action {
+      INVALID = 0;
+      PROFILE_CYCLE = 1;
+      PROFILE_NEXT = 2;
+      PROFILE_PREV = 3;
+      PROFILE_ACTIVATE = 4;
+      G_SHIFT = 5;
+      BATTERY_LIFE = 6;
+      G_SHIFT_DEFAULT = 7;
+      NATIVE_ACTION = 8;
+      REPORT_RATE_CYCLE = 9;
+    }
+    logi.protocol.macros.Macro.Device.Action action = 1;
+  }
+  message AudioSettings {
+    enum Type {
+      INVALID_TYPE = 0;
+      BLUEVOICE_2 = 1;
+      EFFECT = 2;
+      LOGIVOICE = 3;
+    }
+    enum PlayOption {
+      INVALID_OPTION = 0;
+      TOGGLE = 1;
+      MOMENTARY = 2;
+    }
+    string card_id = 1;
+    logi.protocol.macros.Macro.AudioSettings.Type type = 2;
+    logi.protocol.macros.Macro.AudioSettings.PlayOption play_option = 3;
+  }
+  message AudioSample {
+    enum SampleOption {
+      INVALID_OPTION = 0;
+      ONE_SHOT = 1;
+      LOOP_ON_HOLD = 2;
+      CONTINUOUS_LOOP = 3;
+    }
+    message Play {
+      enum Action {
+        INVALID_ACTION = 0;
+        PLAY = 1;
+        STOP = 2;
+      }
+      logi.protocol.macros.Macro.AudioSample macro = 1;
+      logi.protocol.macros.Macro.AudioSample.Play.Action action = 2;
+    }
+    string audio_file_path = 1;
+    string slot_prefix = 2;
+    logi.protocol.macros.Macro.AudioSample.SampleOption play_option = 3;
+    string play_device = 4;
+    string category = 5;
+    bool no_audio = 6;
+  }
+  message IlluminationLightPreset {
+    string card_id = 1;
+    string slot_prefix = 2;
+  }
+  message IlluminationLight {
+    enum Action {
+      INVALID = 0;
+      CYCLE_POWER_ONOFF = 1;
+      TEMPERATURE_INCREASE = 2;
+      TEMPERATURE_DECREASE = 3;
+      BRIGHTNESS_DECREASE = 4;
+      BRIGHTNESS_INCREASE = 5;
+      CYCLE_POWER_ON = 6;
+      CYCLE_POWER_OFF = 7;
+    }
+    logi.protocol.macros.Macro.IlluminationLight.Action action = 1;
+    string slot_prefix = 2;
+  }
+  message LpsAction {
+    string action_id = 1;
+    int32 number_of_ticks = 2;
+    google.protobuf.Struct parameters = 3;
+    bool registered_action = 4;
+  }
+  logi.protocol.macros.Macro.Type type = 1;
+  string id = 2;
+  string name = 3;
+  string icon = 4;
+  string action_name = 5;
+  logi.protocol.util.Color color = 6;
+  bool onboardable = 7;
+  string linked_card = 10;
+  string linked_lighting_effect = 11;
+  repeated string target_signatures = 20;
+  bool apply_card = 30;
+  logi.protocol.macros.Macro.Keystroke keystroke = 31;
+  logi.protocol.macros.Macro.Mouse mouse = 32;
+  logi.protocol.macros.Macro.System system = 33;
+  logi.protocol.macros.Macro.App app = 34;
+  logi.protocol.macros.Macro.Audio audio = 35;
+  logi.protocol.macros.Macro.Media media = 36;
+  logi.protocol.macros.Macro.Sequence sequence = 37;
+  logi.protocol.macros.Macro.Lighting lighting = 38;
+  logi.protocol.macros.Macro.GHub ghub = 39;
+  logi.protocol.macros.Macro.Action action = 40;
+  logi.protocol.macros.Macro.Device device = 41;
+  logi.protocol.macros.Macro.QuickLaunch quick_launch = 42;
+  logi.protocol.macros.Macro.AudioSettings audio_settings = 43;
+  logi.protocol.macros.Macro.AudioSample audio_sample = 44;
+  logi.protocol.macros.Macro.IlluminationLightPreset illumination_light_preset = 45;
+  logi.protocol.macros.Macro.IlluminationLight illumination_light = 46;
+  logi.protocol.macros.Macro.LpsAction lps_action = 47;
+  logi.protocol.macros.Macro.Profiles profiles = 48;
+}
+message PlaybackParameters {
+  bool repeat = 1;
+  bool one_shot = 2;
+  bool toggle = 3;
+}
+message Status {
+  enum State {
+    INVALID = 0;
+    READY = 1;
+    RECORDING_UI_MACRO = 2;
+    RECORDING_QUICK_MACRO = 3;
+  }
+  logi.protocol.macros.Status.State state = 1;
+  logi.protocol.macros.QuickRecording quick_recording = 2;
+  string recording_for_profile_id = 3;
+}
+message QuickRecording {
+  bool enabled = 1;
+  string slot_id = 2;
+  string return_path = 3;
+}
+message Preset {
+  enum Platform {
+    ANY = 0;
+    WIN = 1;
+    OSX = 2;
+  }
+  string name = 1;
+  logi.protocol.macros.Preset.Platform platform = 2;
+  logi.protocol.macros.Macro macro = 3;
+  repeated string keystroke = 4;
+}
+message Presets {
+  message Category {
+    repeated logi.protocol.macros.Preset presets = 1;
+  }
+  map<string, logi.protocol.macros.Presets.Category> categories = 1;
+}

@@ -1,0 +1,203 @@
+syntax = "proto3";
+package logi.protocol.unified_profiles;
+import "google/protobuf/struct.proto";
+
+enum ActivityState {
+  INVALID_STATE = 0;
+  ACTIVE = 1;
+  INACTIVE = 2;
+  SUSPENDED = 3;
+  DISABLED = 4;
+  REMOVED = 5;
+}
+enum ActivityType {
+  INVALID_ACTIVITY = 0;
+  STANDARD = 1;
+  SUB_ACTIVITY = 2;
+}
+enum Comparator {
+  INVALID_COMPARATOR = 0;
+  NOT_EQUAL = 1;
+  EQUAL = 2;
+  LOWER_THAN = 3;
+  GREATER_THAN = 4;
+}
+enum LogicalOperator {
+  INVALID_OPERATOR = 0;
+  OR = 1;
+  AND = 2;
+}
+enum NavigationAction {
+  INVALID_NAVIGATION = 0;
+  CYCLE_NEXT = 1;
+  CYCLE_PREVIOUS = 2;
+  DOWN = 3;
+  UP = 4;
+  GO_TO = 5;
+  BACK = 6;
+  HOME = 7;
+}
+enum ActivationMode {
+  STANDARD_MODE = 0;
+  MANUAL_MODE = 1;
+  LOCKED_MODE = 2;
+}
+message ActivityStateMap {
+  map<string, logi.protocol.unified_profiles.ActivityState> activities = 1;
+}
+message ActivityStateChangeMap {
+  map<string, logi.protocol.unified_profiles.ActivityStateChange> activity_state_change = 1;
+}
+message ActivityDataMap {
+  map<string, logi.protocol.unified_profiles.ActivityAndState> activities = 1;
+}
+message StatusData {
+  string type = 1;
+  string string_value = 2;
+  int32 int_value = 3;
+  bool bool_value = 4;
+  double double_value = 5;
+  google.protobuf.Struct json_value = 6;
+}
+message StatusDataMap {
+  map<string, logi.protocol.unified_profiles.StatusData> statuses = 1;
+}
+message ConditionalData {
+  logi.protocol.unified_profiles.StatusData status = 1;
+  logi.protocol.unified_profiles.Comparator comparator = 2;
+}
+message ConditionalListData {
+  logi.protocol.unified_profiles.LogicalOperator logical_operator = 1;
+  repeated logi.protocol.unified_profiles.ConditionalData conditionals = 2;
+}
+message ActivityData {
+  message ParentingRulesData {
+    enum ActivationBehavior {
+      INVALID_BEHAVIOR = 0;
+      NONE = 1;
+      FIRST_CHILD = 2;
+      LAST_USED = 3;
+    }
+    logi.protocol.unified_profiles.ActivityData.ParentingRulesData.ActivationBehavior activation_behavior = 1;
+    repeated uint32 child_order = 2;
+  }
+  string activity_id = 1;
+  google.protobuf.Struct metadata = 2;
+  logi.protocol.unified_profiles.ActivityType type = 3;
+  logi.protocol.unified_profiles.ConditionalListData activation_conditionals = 4;
+  logi.protocol.unified_profiles.ConditionalListData deactivation_conditionals = 5;
+  bool is_disabled = 6;
+  logi.protocol.unified_profiles.ActivityData.ParentingRulesData parenting_rules = 7;
+}
+message SetActivity {
+  logi.protocol.unified_profiles.ActivityData activity_data = 1;
+  string parent_id = 2;
+}
+message ActivityAndState {
+  logi.protocol.unified_profiles.ActivityData activity_data = 1;
+  logi.protocol.unified_profiles.ActivityState state = 2;
+}
+message ActivityStateInfo {
+  logi.protocol.unified_profiles.ActivityState state = 1;
+  int64 timestamp_ms = 2;
+}
+message ActivityStateChange {
+  string activity_id = 1;
+  logi.protocol.unified_profiles.ActivityType type = 2;
+  logi.protocol.unified_profiles.ActivityStateInfo activity_state_info = 3;
+}
+message ManualActivity {
+  string activity_id = 1;
+  bool manual_flag = 2;
+}
+message NavigationCommand {
+  logi.protocol.unified_profiles.NavigationAction action = 1;
+  uint32 order = 2;
+  string activity_id = 3;
+}
+message RemoveActivity {
+  string activity_id = 1;
+  bool remove_tree = 2;
+}
+message DuplicateActivity {
+  string activity_id = 1;
+}
+message AssignmentData {
+  string activity_id = 1;
+  google.protobuf.Struct settings = 2;
+  bool is_baseline = 3;
+  bool is_disabled = 4;
+}
+message Configuration {
+  message Header {
+    string type = 1;
+    string address = 2;
+    string version = 3;
+  }
+  message HeaderList {
+    repeated logi.protocol.unified_profiles.Configuration.Header headers = 1;
+  }
+  message DuplicateActivity {
+    repeated logi.protocol.unified_profiles.Configuration.Header headers = 1;
+    string activity_id = 2;
+    bool duplicate_children = 3;
+  }
+  message HeaderListActivities {
+    repeated logi.protocol.unified_profiles.Configuration.Header headers = 1;
+    repeated string activity_ids = 2;
+  }
+  message HeaderActivityIds {
+    logi.protocol.unified_profiles.Configuration.Header header = 1;
+    repeated string activity_ids = 2;
+  }
+  message HeaderActivityIdsList {
+    repeated logi.protocol.unified_profiles.Configuration.HeaderActivityIds header_activity_ids = 1;
+  }
+  message Copy {
+    string activity_source_id = 1;
+    string activity_target_id = 2;
+    repeated logi.protocol.unified_profiles.Configuration.Header headers = 3;
+  }
+  message Removed {
+    logi.protocol.unified_profiles.Configuration.Header header = 1;
+    repeated string activity_ids = 2;
+  }
+  logi.protocol.unified_profiles.Configuration.Header header = 1;
+  map<string, logi.protocol.unified_profiles.AssignmentData> assignments = 2;
+}
+message ConfigurationList {
+  message Removed {
+    repeated logi.protocol.unified_profiles.Configuration.Removed removed_configurations = 1;
+  }
+  repeated logi.protocol.unified_profiles.Configuration configurations = 1;
+}
+message FactoryDefault {
+  logi.protocol.unified_profiles.Configuration.Header header = 1;
+  google.protobuf.Struct settings = 2;
+}
+message LegacyMigration {
+  enum State {
+    INVALID_STATE = 0;
+    NOT_STARTED = 1;
+    IN_PROGRESS = 2;
+    COMPLETED = 3;
+    FAILED = 4;
+  }
+  logi.protocol.unified_profiles.LegacyMigration.State state = 1;
+}
+message LegacyMigrationProgress {
+  float value = 1;
+  string profile_id = 2;
+  string application_name = 3;
+  string profile_name = 4;
+}
+message ModeStatus {
+  logi.protocol.unified_profiles.ActivationMode mode = 1;
+}
+message SystemSettings {
+  message ActivityOrder {
+    repeated string activity_ids = 1;
+  }
+  logi.protocol.unified_profiles.SystemSettings.ActivityOrder activity_order = 1;
+  logi.protocol.unified_profiles.ActivationMode activation_mode = 2;
+}
