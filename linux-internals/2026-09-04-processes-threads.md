@@ -690,7 +690,10 @@ exit (voluntary), fatal error — bad instruction, bad memory, divide-by-zero
 
 **libc `exit(3)` ≠ `SYSCALL_DEFINE1(exit)`.** C's `exit(3)` runs atexit
 handlers then calls `_exit(2)` = `exit_group(2)`, ending the **whole thread
-group**. The bare `exit(2)` syscall ends **one thread**. `kernel/exit.c`:
+group**. The bare `exit(2)` syscall ends **one thread**. Checked with a
+2-line C program + `strace -e trace=exit,exit_group`: glibc's `_exit()`
+does issue `exit_group`, not the bare `exit` syscall — confirms this isn't
+just a kernel-source reading, it's what actually runs. `kernel/exit.c`:
 
 ```c
 SYSCALL_DEFINE1(exit, int, error_code)        // exit.c:1116  -> do_exit()        one task
@@ -735,6 +738,15 @@ if (autoreap) tsk->exit_state = EXIT_DEAD;        // 798  parent ignores SIGCHLD
 A task becomes `EXIT_ZOMBIE` (the number 32 from §1.4) the moment teardown
 finishes. It holds nothing but its `task_struct` and exit status — `mm`,
 files, fds already gone — until the parent `wait()`s.
+
+**`man 2 wait` independently confirms the whole point of this file.** Its
+"Linux notes" section, unprompted: *"In the Linux kernel, a kernel-scheduled
+thread is not a distinct construct from a process. Instead, a thread is
+simply a process that is created using the Linux-unique clone(2) system
+call; other routines such as the portable pthread_create(3) call are
+implemented using clone(2)."* That's §2.2/§2.2a's argument, stated as
+official documented fact rather than something I inferred by reading
+`copy_process()`.
 
 **Reparenting — where orphans go** (`find_new_reaper()`, `exit.c:669`):
 
