@@ -939,6 +939,140 @@ process." And the test is just: *do these two point at the same
 `signal_struct`?* One pointer comparison. That's all "same process" means
 here.
 
+## 2.2a Correction (2026-09-11): "one `if`" undersells it
+
+Went back to this after a chat rubber-ducking session flagged it. §2.2 is
+correct about *what* the `if` does — decides tgid/group_leader — but wrong to
+call that "the difference." It's the last link in a chain the kernel actively
+enforces, with real consequences outside `copy_process()` too. Verified
+each of these against `~/linuxsrc/linux` myself, not taken on faith:
+
+**(a) The flags aren't independent — `copy_process()` itself refuses bad
+combos.** `kernel/fork.c:2039`:
+
+```c
+/*
+ * Thread groups must share signals as well, and detached threads
+ * can only be started up within the thread group.
+ */
+if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
+	return ERR_PTR(-EINVAL);
+
+/*
+ * Shared signal handlers imply shared VM. By way of the above,
+ * thread groups also imply shared VM. Blocking this case allows
+ * for various simplifications in other code.
+ */
+if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
+	return ERR_PTR(-EINVAL);
+```
+
+So it's not "pick `CLONE_THREAD` independently of the rest." Ask for
+`CLONE_THREAD` and you're forced into `CLONE_SIGHAND`, which forces
+`CLONE_VM`:
+
+```
+   CLONE_THREAD  ──requires──►  CLONE_SIGHAND  ──requires──►  CLONE_VM
+   "join the group"             "share signal table"          "share address space"
+```
+
+The kernel's own comment even says why: *"thread groups also imply shared
+VM. Blocking this case allows for various simplifications in other code."*
+§2.2's version made tgid assignment look like one isolated choice. It's the
+end of a forced chain.
+
+**(b) The reverse direction is guarded too — `unshare()`.**
+`kernel/fork.c:3161`, `check_unshare_flags()`:
+
+```c
+if (unshare_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM)) {
+	if (!thread_group_empty(current))
+		return -EINVAL;
+}
+```
+
+**What this does:** if I'm trying to *leave* my thread group (or split off my
+signal handlers / address space) while other threads of mine are still
+alive, that's `-EINVAL`. `thread_group_empty()` — despite the name — means
+"do I have no *other* threads," i.e. am I alone in my own group. You can't
+half-detach out from under siblings that are still running. Something
+§2.2 never looked at, because it only reads the *creation* path
+(`copy_process`), not the teardown/reconfiguration path.
+
+**(c) Exit/reaping asymmetry — and my first pass at this got the mechanism
+wrong.** Exp 4's `clone3` trace shows `exit_signal=0` for the thread vs
+`SIGCHLD` for `fork()`, and I originally read that as "the kernel sees
+`exit_signal=0` and skips notifying the parent." Checked it — that's not
+what happens. `copy_process()` **ignores the caller's `exit_signal` argument
+entirely** when `CLONE_THREAD` is set and hard-codes a sentinel instead,
+`kernel/fork.c:2461`:
+
+```c
+if (clone_flags & CLONE_THREAD)
+	p->exit_signal = -1;
+```
+
+And at actual exit, `kernel/exit.c:788`:
+
+```c
+} else if (thread_group_leader(tsk)) {
+	autoreap = thread_group_empty(tsk) &&
+		   do_notify_parent(tsk, tsk->exit_signal);
+} else {
+	autoreap = true;
+	/* untraced sub-thread */
+	do_notify_pidfd(tsk);
+```
+
+**What this does:** `do_notify_parent()` — the call that sends the exit
+signal — is only ever reached from the `thread_group_leader(tsk)` branch. A
+non-leader thread falls into the `else`: it's marked `autoreap = true` and
+`do_notify_parent` is never called, full stop. Its `exit_signal` field (the
+`-1` from above) isn't even read here. So "a thread's death isn't reported
+as a child exit" isn't caused by a `0`/`-1` value telling the notify path
+"don't send anything" — the notify path is structurally skipped for
+non-leaders regardless of what's in that field. The `exit_signal=0` visible
+in the `clone3` strace is just glibc's own syscall argument; the kernel
+throws it away for `CLONE_THREAD` tasks and the field plays no role in why
+threads don't generate a waitable zombie.
+
+**(d) `de_thread()` on `execve` — a structural consequence of being bound
+together.** `fs/exec.c:922`:
+
+```c
+static int de_thread(struct task_struct *tsk)
+{
+	...
+	if (thread_group_empty(tsk))
+		goto no_thread_group;
+
+	/*
+	 * Kill all other threads in the thread group.
+	 */
+	...
+	sig->notify_count = zap_other_threads(tsk);
+	...
+	while (sig->notify_count) {
+		__set_current_state(TASK_KILLABLE);
+		...
+		schedule();
+	}
+```
+
+**What this does:** when any thread in a group calls `execve`, the kernel
+first kills every *other* thread in that group (`zap_other_threads`) and
+waits for them to actually die before loading the new program. `execve`
+collapses a whole thread group down to one task. That behavior only exists
+*because* `CLONE_THREAD` tasks are bound into one group in the first
+place — it's downstream of the `if`, not visible in it.
+
+**Corrected version of §2.2's closing line:** thread-group membership isn't
+one independent bit flipped at creation. It's a chain of enforced flag
+dependencies (`VM → SIGHAND → THREAD`) at creation, guarded again on the way
+*out* (`unshare`), with real structural consequences at exit (reaping) and
+exec (`de_thread`). The `if` at `fork.c:2381` is real and is where the label
+gets assigned — it's just the last step, not the whole mechanism.
+
 ## 2.3 Fig. 2-11's two columns are really just flags
 
 p.104 has a table: things shared by all threads (address space, open files,
@@ -1179,9 +1313,10 @@ clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD
 Observed: same syscall family both times. `fork()` → `clone` with **no
 sharing flags** (just `SIGCHLD` so the parent gets notified, plus TID
 housekeeping). `pthread_create()` → `clone3` with the **entire sharing menu**
-— `CLONE_VM|FS|FILES|SIGHAND|THREAD|SYSVSEM|SETTLS`. Also `exit_signal=0` vs
-`SIGCHLD`: a thread's death isn't reported to a parent as a child exit.
-That flag list *is* the difference between "process" and "thread". Nothing
+— `CLONE_VM|FS|FILES|SIGHAND|THREAD|SYSVSEM|SETTLS`. That flag list *is* the
+difference between "process" and "thread" (see §2.2a(c) for why the
+`exit_signal=0` field itself isn't the reason threads don't get reaped like
+children). Nothing
 else.
 
 ## The programs
@@ -1227,9 +1362,13 @@ them.
   by normal signals, `/sbin/init`), so "cosmetic" is generous.
 - *The thing the comment is actually about* is a **run order**, enforced
   separately: `kernel_init` (pid 1) calls `wait_for_completion(&kthreadd_done)`
-  early in `kernel_init_freeable()`, and `kthreadd` calls
-  `complete(&kthreadd_done)` once it's up. So pid 1 is *created* first but is
-  *parked* until pid 2 is alive.
+  at `init/main.c:1558` — **before** it even calls `kernel_init_freeable()`
+  (line 1560), not inside it as I first wrote. `kthreadd` calls
+  `complete(&kthreadd_done)` once it's up (`init/main.c:719`). So pid 1 is
+  *created* first but is *parked* — at the very top of `kernel_init()`, before
+  any of the freeable-init work — until pid 2 is alive.
+  (Corrected 2026-09-11 — the wait is a gate in front of `kernel_init_freeable`,
+  not a step inside it.)
 
 What breaks if pid 1 runs its kthread-using code before kthreadd exists:
 `kthread_create_on_node()` builds a request and hands it to kthreadd by
