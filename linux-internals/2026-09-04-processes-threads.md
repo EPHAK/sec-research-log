@@ -606,8 +606,22 @@ onto `for_each_process`'s list and the PID-lookup structure.
 
 **`vfork` is not a fossil.** `CLONE_VFORK | CLONE_VM`: the child shares the
 parent's address space and the parent is **suspended** until the child
-`execve`s or `_exit`s. It skips `dup_mmap` entirely — `posix_spawn` in glibc
-is built on it.
+`execve`s or `_exit`s (confirmed in `man 2 vfork`, word for word). It skips
+`dup_mmap` entirely.
+
+**Correction (2026-09-11):** I'd written "`posix_spawn` in glibc is built on
+[`vfork`]" — checked `man 3 posix_spawn` and that's not accurate for a
+system running anything recent. Since **glibc 2.24**, `posix_spawn()` calls
+`clone(2)` directly with `CLONE_VM | CLONE_VFORK` — the same *effect* as
+`vfork` (shared address space, parent suspended) but not a call to the
+`vfork()` function at all. This box is on glibc 2.43 (`ldd --version`), so
+that's what actually runs here. Even the *pre*-2.24 behavior wasn't a flat
+"built on vfork": it only used `vfork()` when there were no pre-exec
+housekeeping steps requested (no `file_actions`, none of `SETSIGMASK` /
+`SETSIGDEF` / `SETSCHEDPARAM` / `SETSCHEDULER` / `SETPGROUP` / `RESETIDS`);
+otherwise it fell back to plain `fork()`. The accurate statement: `vfork`'s
+*mechanism* (share the address space, suspend the parent) is what
+`posix_spawn` is built to reuse — not literally a call to `vfork()`.
 
 ---
 
