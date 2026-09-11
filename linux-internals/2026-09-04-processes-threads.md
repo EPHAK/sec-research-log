@@ -56,22 +56,10 @@ The `&` one matters most. Flags are single bits packed into one integer:
    flags & CLONE_THREAD               ← AND means "is that bit on?" (here: no)
 ```
 
-**Terms that show up later without being introduced.** Adding these here so
-the rest of this file doesn't need a second tab open:
-
-| Term | What it means |
-|---|---|
-| refcount | A counter on a shared object: "how many tasks currently point at me." Goes up when a pointer is copied (`mmget`, `get_task_struct`), down when a task drops it. The object is freed only when it hits zero — this is *how* sharing (`CLONE_VM` etc.) is memory-safe: nobody frees a struct another task is still using. |
-| `mm_struct` | A process's address space: the list of mapped regions, the pointer to the top-level page table, memory stats. `task_struct->mm` points at one of these; §1.7 covers who gets a fresh one vs a shared one. |
-| VMA (`vm_area_struct`) | One mapped region inside an address space — e.g. "the heap," "this one shared library," "this stack." An `mm_struct` is basically a list of VMAs. |
-| page table / PTE | The hardware-walked structure that translates a virtual address (what your code sees) to a physical one (an actual RAM location). A PTE ("page table entry") is one row of it — one page's worth of translation, plus permission bits (readable/writable/executable, present-or-not). Copy-on-write in §1.7 works by marking PTEs read-only in both parent and child, then copying only the one page that gets written to. |
-| `cred` (`struct cred`) | A task's identity for permission checks: UID, GID, capabilities. `task_struct->cred` points at one. Overwriting this pointer to point at a root `cred` is the classic kernel-exploit finishing move (§1.6). |
-| namespace | A kernel mechanism for giving a group of tasks their own private view of something global — their own PID numbering, their own mount table, their own network stack, etc. Containers are built by combining several of these. `vnr` (§1.3) = "as numbered inside my own PID namespace." |
-| `ptrace` | The syscall behind debuggers (`gdb`) and tracers (`strace`): lets one process inspect and control another's registers, memory, and syscalls. Shows up in §1.9 because a `ptrace`d task temporarily gets a different "who do I report to" than its real parent. |
-| ASLR | Address Space Layout Randomization — the kernel places a program's stack, heap, libraries, and (with a PIE binary) its own code at a random address each run, so an attacker can't hard-code "the shellcode is at 0x08048000" the way they could decades ago. Sidesteppable if the attacker can leak one address (a "info leak") and calculate offsets from there. |
-| ELF / `PT_INTERP` / auxv | ELF is the file format Linux executables and shared libraries are stored in. `PT_INTERP` is a field inside an ELF file naming the dynamic linker (`/lib64/ld-linux-x86-64.so.2`) that should actually run first and load everything else. `auxv` ("auxiliary vector") is a small block of kernel-supplied key/value pairs placed on the new stack at exec time — page size, entry point, and (relevant later) an AT_RANDOM pointer used to seed the stack canary. |
-| PSW (program status word) | The book's name (from a more IBM/mainframe-flavored era of OS textbooks) for "the CPU's flags/status register plus the program counter" — on x86-64 this is spread across `RIP` and `RFLAGS`. Not a literal struct field anywhere; §1.6 maps it onto the saved-registers blob in `task_struct`. |
-| RCU (read-copy-update) | A kernel synchronization scheme for data that's read constantly but rarely written: readers walk it lock-free, and a writer replacing an entry defers freeing the old version until every CPU is guaranteed to be done reading it. Comes up wherever a list is walked without a lock, e.g. `for_each_process()`. Not opened up in this file — flagged with `?` where it matters. |
+Terms used later without being re-defined inline (refcount, `mm_struct`,
+VMA/PTE, `cred`, namespace, `ptrace`, ASLR, ELF/`PT_INTERP`/auxv, PSW, RCU,
+...) live in **[`GLOSSARY.md`](GLOSSARY.md)**, shared across every dated
+file in this directory. Check there before assuming a term is undefined.
 
 ---
 
@@ -751,11 +739,22 @@ This is the book's *"processes in UNIX cannot disinherit their children"*
 `wait_task_zombie()` (`exit.c:1206`):
 
 ```c
-if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, EXIT_DEAD) != EXIT_ZOMBIE)  // 1232  atomically claim it
-    return 0;                                                        // another waiter won
-wo->wo_stat = status;                                                // packed code back to caller
-release_task(p);                                                     // 1313  task_struct freed
+// exit.c:1230 — target state isn't always EXIT_DEAD:
+state = (ptrace_reparented(p) && thread_group_leader(p)) ? EXIT_TRACE : EXIT_DEAD;
+if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, state) != EXIT_ZOMBIE)  // 1232  atomically claim it
+    return 0;                                                    // another waiter won
+wo->wo_stat = status;                                            // packed code back to caller
+release_task(p);                                                 // 1313  task_struct freed
 ```
+
+**Correction (2026-09-11):** I'd originally hardcoded `EXIT_DEAD` as the
+second `cmpxchg` argument — wrong, it's a variable. If `p` is a
+ptrace'd thread-group leader (`ptrace_reparented()` — §1.9's "`parent` !=
+`real_parent`" case), the target is `EXIT_TRACE` instead, so the debugger
+gets a chance to see the exit state before the task is actually freed.
+Non-traced tasks (the overwhelming majority) still land on `EXIT_DEAD`
+exactly as I'd written, so the diagram two blocks down is still correct for
+that common case — just not the whole story.
 
 `release_task()` (`exit.c:248`) unhooks it from the pidhash (the PID→task
 lookup structure — §1.5's IDR), sibling list
@@ -1083,6 +1082,26 @@ waits for them to actually die before loading the new program. `execve`
 collapses a whole thread group down to one task. That behavior only exists
 *because* `CLONE_THREAD` tasks are bound into one group in the first
 place — it's downstream of the `if`, not visible in it.
+
+**Cross-checked against `man 2 clone`** (userspace's actual contract, not
+just kernel source comments) — it confirms all of the above and adds
+something the source comments don't: this was a rule added *progressively*
+over kernel history, not always true. Quoting it directly:
+
+> Since Linux 2.5.35, the flags mask must also include CLONE_SIGHAND if
+> CLONE_THREAD is specified (and note that, since Linux 2.6.0, CLONE_SIGHAND
+> also requires CLONE_VM to be included).
+>
+> A new thread created with CLONE_THREAD has the same parent process as the
+> process that made the clone call [...] When a CLONE_THREAD thread
+> terminates, the thread that created it is not sent a SIGCHLD (or other
+> termination) signal; nor can the status of such a thread be obtained
+> using wait(2).
+
+That second paragraph is (c) above, stated directly in the userspace
+contract — good independent confirmation that "non-leader threads don't
+notify a parent" is the intended, documented behavior, not a side effect I
+misread out of the source.
 
 **Corrected version of §2.2's closing line:** thread-group membership isn't
 one independent bit flipped at creation. It's a chain of enforced flag
