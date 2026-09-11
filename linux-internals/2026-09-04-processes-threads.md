@@ -1202,10 +1202,19 @@ the kernel is concerned — every pthread is a real `task_struct` that the
 scheduler handles on its own. The per-process "thread table" in Fig. 2-15(a)
 doesn't exist here.
 
-`?` — I think glibc does strict 1:1 (one pthread = exactly one task, no
-juggling), which would mean §2.2.6's "hybrid" design is a path Linux didn't
-take. But that's a *glibc* thing, not in this source tree, so don't trust
-this line until I check it.
+**Resolved (2026-09-11), via `man 7 pthreads` — not in the kernel tree so I
+was right to flag it, and the guess was right.** Direct quote: *"Both of
+these are so-called 1:1 implementations, meaning that each thread maps to a
+kernel scheduling entity. Both threading implementations employ the Linux
+clone(2) system call."* ("Both" = LinuxThreads, the retired pre-2.4 glibc
+implementation, and NPTL, the one every modern system uses.) So yes — glibc
+does strict 1:1, no user-space juggling of multiple pthreads onto fewer
+kernel tasks, and §2.2.6's "hybrid" (M:N) model is a path Linux never took.
+One glibc-internal detail the man page adds for free: pre-NPTL
+(`LinuxThreads`), threads didn't even share a PID — `getpid()` returned a
+different value per thread, the opposite of what §1.3 found for NPTL.
+That's not a discrepancy in these notes, it's how bad the old
+implementation was before NPTL existed.
 
 ## 2.5 The errno problem leads somewhere I recognize
 
