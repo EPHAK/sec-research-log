@@ -1,9 +1,0 @@
-﻿C:\ BUILTIN\Administrators:(OI)(CI)(F)
-    NT AUTHORITY\SYSTEM:(OI)(CI)(F)
-    BUILTIN\Users:(OI)(CI)(RX)
-    NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
-    NT AUTHORITY\Authenticated Users:(AD)
-    S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176:(S,RD,X,RA)
-    Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
-
-Successfully processed 1 files; Failed processing 0 files

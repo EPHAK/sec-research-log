@@ -1,6 +1,0 @@
-syntax = "proto3";
-package logi.protocol.streamlabs;
-
-message StreamlabsState {
-  bool installed = 1;
-}

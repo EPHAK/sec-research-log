@@ -1,7 +1,0 @@
-syntax = "proto3";
-package logi.protocol.bunny_hopping;
-
-message BunnyHopping {
-  uint32 timeout = 1;
-  bool enabled = 2;
-}

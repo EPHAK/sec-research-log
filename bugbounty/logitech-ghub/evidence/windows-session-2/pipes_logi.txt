@@ -1,9 +1,0 @@
-﻿
-Pipe                                 OwnerPID Owner         Path                                  
-----                                 -------- -----         ----                                  
-e0c10619-60c9-5414-a4e8-5d9e19d4dedc    15556 lghub_agent   C:\Program Files\LGHUB\lghub_agent.exe
-logi.trueforce.connect                  15556 lghub_agent   C:\Program Files\LGHUB\lghub_agent.exe
-a62ed1c1-e1a9-5495-9038-16bd49ec7341     6180 lghub_updater                                       
-
-
-
