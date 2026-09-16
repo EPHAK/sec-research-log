@@ -386,7 +386,7 @@ data structure in the kernel:
 `include/linux/sched.h:835` — and it doesn't close until **line 1690**
 (`} __attribute__ ((aligned (64)));`). ~850 lines, hundreds of fields.
 
-**Why I couldn't find it just by scrolling.** Three reasons:
+**Why you can't find it just by scrolling.** Three reasons:
 
 - It's ~850 lines long and a big fraction of every screen is `#ifdef
   CONFIG_...` / `#endif`. The fields are real; most are gated on a build
